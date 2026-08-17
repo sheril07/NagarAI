@@ -1,4 +1,3 @@
-print("IMAGE INTAKE FILE STARTED")
 import cv2
 import json
 import os
