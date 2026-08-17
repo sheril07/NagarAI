@@ -1,0 +1,6 @@
+openai-whisper
+webrtcvad
+scipy
+numpy
+pydub
+anthropic
