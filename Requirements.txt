@@ -4,6 +4,10 @@ scipy
 numpy
 pydub
 anthropic
+-e fastapi
+uvicorn
+python-multipart
+supabase
 opencv-python
 pillow
 ultralytics
