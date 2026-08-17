@@ -10,3 +10,34 @@ Public Safety               | Dangerous locations, exposed electrical infrastruc
 Public Health & Sanitation   | Sewage overflow, stagnant water, unhygienic public areas                          
 Public Transport            | Damaged bus stops, unsafe stops, obstruction affecting transit                  
 Other / General              | Complaints that don't fit elsewhere                                         
+
+
+eg template
+{
+
+  "input_type": "photo",
+
+  "category": "road_transport",
+
+  "issue": "pothole",
+ 
+
+  "description": "Large pothole detected on the roadway.",
+
+  "latitude": 12.XXXX,
+
+  "longitude": 80.XXXX,
+
+  "location": "Chennai",
+
+  "severity_features": {
+
+    "size": "large", (only for photos) 
+
+    people affected 
+
+    "public_safety_risk": true
+
+  }
+
+}
