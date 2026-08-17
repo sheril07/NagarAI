@@ -21,10 +21,31 @@ from fastapi import FastAPI, UploadFile, File, Form
 from supabase import create_client
 
 from voice_intake import process_voice_complaint
+from Intake.text_intake import process_text_complaint
 
 app = FastAPI()
 
 supabase = create_client(os.environ["SUPABASE_URL"], os.environ["SUPABASE_KEY"])
+
+
+@app.post("/complaints/text")
+async def submit_text_complaint(
+    text: str = Form(...),
+):
+    fields = process_text_complaint(text)
+
+    row = {
+        "source_modality": "text",
+        "category": fields["category"],
+        "issue": fields["issue"],
+        "description": fields["description"],
+        "raw_transcript": text,
+        "status": "pending",
+    }
+
+    result = supabase.table("complaints").insert(row).execute()
+
+    return {"complaint": result.data[0]}
 
 
 @app.post("/complaints/voice")
