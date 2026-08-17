@@ -10,32 +10,53 @@
     <div class="container">
         <h1>NagarAI Civic Intake</h1>
         
-        <!-- Voice Complaint Section -->
+        <!-- GPS Status Badge -->
+        <div id="gpsBadge" class="gps-badge">
+            📍 GPS Status: <span id="gpsText">Checking location...</span>
+        </div>
+
+        <!-- 1. Voice Complaint Section -->
         <div class="card">
             <h2>1. Voice Complaint</h2>
-            <div class="card">
-    <h2>1. Voice Complaint (Mic Record)</h2>
-    <button type="button" id="startRec">🎤 Start Recording</button>
-    <button type="button" id="stopRec" disabled>⏹️ Stop & Submit</button>
-    <p id="recStatus">Click Start to record your complaint...</p>
-</div>
+            
+            <!-- Mic Record Option -->
+            <div class="voice-controls">
+                <button type="button" id="startRec">🎤 Start Recording</button>
+                <button type="button" id="stopRec" disabled>⏹️ Stop & Submit</button>
+            </div>
+            <p id="recStatus">Click Start to record your complaint...</p>
+
+            <hr class="divider">
+
+            <!-- File Upload Option -->
             <form id="voiceForm">
-                <input type="file" id="audioFile" accept="audio/*" required>
-                <button type="submit">Submit Voice Complaint</button>
+                <label for="audioFile">Or upload an audio file:</label>
+                <input type="file" id="audioFile" accept="audio/*">
+                <button type="submit">Upload Voice File</button>
             </form>
         </div>
 
-        <!-- Text Complaint Section -->
+        <!-- 2. Text Complaint Section -->
         <div class="card">
             <h2>2. Text Complaint</h2>
             <form id="textForm">
-                <textarea id="textInput" placeholder="Describe the issue..." required></textarea>
+                <textarea id="textInput" placeholder="Describe the issue (e.g., street light broken in front of P2)..." required></textarea>
                 <button type="submit">Submit Text Complaint</button>
             </form>
         </div>
 
+        <!-- 3. Image Complaint Section -->
+        <div class="card">
+            <h2>3. Image Complaint</h2>
+            <form id="imageForm">
+                <input type="file" id="imageFile" accept="image/*" required>
+                <textarea id="imageCaption" placeholder="Add optional details about the photo..."></textarea>
+                <button type="submit">Submit Image Complaint</button>
+            </form>
+        </div>
+
         <!-- Submission Status Output -->
-        <div id="status" class="status-box"></div>
+        <div id="status" class="status-box">Ready to receive complaints.</div>
     </div>
 
     <script src="script.js"></script>
