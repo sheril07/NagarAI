@@ -733,7 +733,7 @@ def create_output(
 # 11. MAIN PHOTO PIPELINE
 # ============================================================
 
-def process_photo(image_path):
+def process_image_complaint(image_path):
 
     
 
