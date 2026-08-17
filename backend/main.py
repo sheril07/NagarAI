@@ -125,7 +125,6 @@ async def submit_photo_complaint(
         "gps_lat": gps_lat,
         "gps_lng": gps_lng,
         "image_url": image_url,
-        "severity_features": fields["severity_features"],
         "status": "pending",
     }
     result = supabase \
