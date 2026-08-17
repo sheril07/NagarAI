@@ -171,12 +171,12 @@ document.getElementById("imageForm").addEventListener("submit", async (e) => {
         const coords = await getLiveLocation();
 
         const formData = new FormData();
-        formData.append("file", imageFile);
+        formData.append("image", imageFile);
         formData.append("caption", caption);
         formData.append("latitude", coords.lat);
         formData.append("longitude", coords.long);
 
-        const response = await fetch(`${API_BASE_URL}/api/image-intake`, {
+        const response = await fetch(`${API_BASE_URL}/complaints/photo`, {
             method: "POST",
             body: formData
         });
