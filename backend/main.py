@@ -35,12 +35,13 @@ async def submit_text_complaint(
     fields = process_text_complaint(text)
 
     row = {
-        "source_modality": "text",
-        "category": fields["category"],
-        "issue": fields["issue"],
-        "description": fields["description"],
-        "raw_transcript": text,
-        "status": "pending",
+    "source_modality": "text",
+    "category": fields["category"],
+    "location_mention": fields["location_mention"],
+    "description": fields["description"],
+    "gps_lat": gps_lat,
+    "gps_lng": gps_lng,
+    "status": "pending",
     }
 
     result = supabase.table("complaints").insert(row).execute()
@@ -77,7 +78,6 @@ async def submit_voice_complaint(
         "category": fields["category"],
         "location_mention": fields["location_mention"],
         "description": fields["description"],
-        "raw_transcript": fields["raw_transcript"],
         "gps_lat": gps_lat,
         "gps_lng": gps_lng,
         "audio_url": audio_url,
