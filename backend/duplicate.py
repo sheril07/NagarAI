@@ -1,10 +1,33 @@
 from math import radians, sin, cos, sqrt, atan2
-from difflib import SequenceMatcher
+from sentence_transformers import SentenceTransformer
+from sklearn.metrics.pairwise import cosine_similarity
+
+from PIL import Image
+import torch
+import open_clip
+
+import requests
+from io import BytesIO
+
+clip_model, _, clip_preprocess = (
+    open_clip.create_model_and_transforms(
+        "ViT-B-32",
+        pretrained="openai"
+    )
+)
+
+clip_model.eval()
+
+embedding_model = SentenceTransformer(
+    "all-MiniLM-L6-v2"
+)
+
 LOCATION_THRESHOLD_METERS = 50
 DUPLICATE_THRESHOLD = 0.70
-LOCATION_WEIGHT = 0.50
-TEXT_WEIGHT = 0.30
-CATEGORY_WEIGHT = 0.20
+LOCATION_WEIGHT = 0.40
+TEXT_WEIGHT = 0.25
+IMAGE_WEIGHT = 0.25
+CATEGORY_WEIGHT = 0.10
 
 def calculate_distance(lat1, lng1, lat2, lng2):
 
@@ -61,12 +84,123 @@ def text_similarity(text1, text2):
     text1 = str(text1).lower().strip()
     text2 = str(text2).lower().strip()
 
-    return SequenceMatcher(
-        None,
-        text1,
-        text2
-    ).ratio()
+    embeddings = embedding_model.encode(
+        [text1, text2]
+    )
 
+    score = cosine_similarity(
+        [embeddings[0]],
+        [embeddings[1]]
+    )[0][0]
+
+    return round(
+        float(score),
+        3
+    )
+
+def get_image_embedding(image_source):
+
+    if not image_source:
+        return None
+
+    try:
+
+        # ----------------------------------------------------
+        # If source is a URL, download the image
+        # ----------------------------------------------------
+
+        if str(image_source).startswith("http"):
+
+            response = requests.get(
+                image_source,
+                timeout=10
+            )
+
+            response.raise_for_status()
+
+            image = Image.open(
+                BytesIO(response.content)
+            ).convert("RGB")
+
+        # ----------------------------------------------------
+        # Otherwise treat it as a local file path
+        # ----------------------------------------------------
+
+        else:
+
+            image = Image.open(
+                image_source
+            ).convert("RGB")
+
+
+        # ----------------------------------------------------
+        # CLIP preprocessing
+        # ----------------------------------------------------
+
+        image = clip_preprocess(
+            image
+        ).unsqueeze(0)
+
+
+        # ----------------------------------------------------
+        # Generate CLIP embedding
+        # ----------------------------------------------------
+
+        with torch.no_grad():
+
+            features = clip_model.encode_image(
+                image
+            )
+
+
+        # Normalize embedding
+
+        features /= features.norm(
+            dim=-1,
+            keepdim=True
+        )
+
+
+        return features.cpu().numpy()[0]
+
+
+    except Exception as e:
+
+        print(
+            "Image embedding error:",
+            e
+        )
+
+        return None
+
+def image_similarity(
+    image_path1,
+    image_path2
+):
+
+    if not image_path1 or not image_path2:
+        return 0.0
+
+    embedding1 = get_image_embedding(
+        image_path1
+    )
+
+    embedding2 = get_image_embedding(
+        image_path2
+    )
+
+    if embedding1 is None or embedding2 is None:
+        return 0.0
+
+    score = cosine_similarity(
+        [embedding1],
+        [embedding2]
+    )[0][0]
+
+    return round(
+        float(score),
+        3
+    )
 
 def category_similarity(category1, category2):
 
@@ -90,6 +224,7 @@ def category_similarity(category1, category2):
 def calculate_duplicate_score(
     location_score,
     text_score,
+    image_score,
     category_score
 ):
 
@@ -97,6 +232,8 @@ def calculate_duplicate_score(
         LOCATION_WEIGHT * location_score
         +
         TEXT_WEIGHT * text_score
+        +
+        IMAGE_WEIGHT * image_score
         +
         CATEGORY_WEIGHT * category_score
     )
@@ -108,13 +245,18 @@ def calculate_duplicate_score(
 
 def find_duplicate_group(
     supabase,
+    complaint_id,
     category,
     description,
     gps_lat,
-    gps_lng
+    gps_lng,
+    image_url = None
 ):
 
-    # GPS is currently required for duplicate detection
+    # ========================================================
+    # GPS IS REQUIRED FOR CURRENT DUPLICATE DETECTION
+    # ========================================================
+
     if gps_lat is None or gps_lng is None:
 
         print(
@@ -125,26 +267,24 @@ def find_duplicate_group(
         return None
 
 
-    # --------------------------------------------------------
-    # Get existing issue groups
-    # --------------------------------------------------------
+    # ========================================================
+    # GET EXISTING COMPLAINTS
+    # ========================================================
 
     try:
 
         response = (
             supabase
-            .table("issue_groups")
+            .table("complaints")
             .select(
-                "id, category, description, gps_lat, gps_lng"
+                "id, category, description, "
+                "gps_lat, gps_lng, cluster_id, image_url"
             )
-            .eq(
-                "category",
-                category
-            )
+            .neq("id", complaint_id)
             .execute()
         )
 
-        existing_groups = (
+        existing_complaints = (
             response.data or []
         )
 
@@ -158,44 +298,54 @@ def find_duplicate_group(
         return None
 
 
-    # --------------------------------------------------------
-    # Compare against existing groups
-    # --------------------------------------------------------
+    # ========================================================
+    # FIND BEST MATCH
+    # ========================================================
 
-    best_group = None
+    best_match = None
     best_score = 0.0
 
 
-    for group in existing_groups:
+    for complaint in existing_complaints:
 
-        group_lat = group.get(
+        # Don't compare complaint with itself
+        if complaint.get("id") == complaint_id:
+            continue
+
+
+        # ----------------------------------------------------
+        # Existing complaint GPS
+        # ----------------------------------------------------
+
+        existing_lat = complaint.get(
             "gps_lat"
         )
 
-        group_lng = group.get(
+        existing_lng = complaint.get(
             "gps_lng"
         )
 
 
         if (
-            group_lat is None
-            or group_lng is None
+            existing_lat is None
+            or existing_lng is None
         ):
             continue
 
 
         # ----------------------------------------------------
-        # GPS distance
+        # Calculate GPS distance
         # ----------------------------------------------------
 
         distance = calculate_distance(
             gps_lat,
             gps_lng,
-            group_lat,
-            group_lng
+            existing_lat,
+            existing_lng
         )
 
 
+        # Only consider complaints within 50 metres
         if (
             distance is None
             or distance > LOCATION_THRESHOLD_METERS
@@ -203,7 +353,7 @@ def find_duplicate_group(
             continue
 
 
-        loc_score = location_similarity(
+        location_score = location_similarity(
             distance
         )
 
@@ -212,9 +362,14 @@ def find_duplicate_group(
         # Text similarity
         # ----------------------------------------------------
 
-        txt_score = text_similarity(
+        text_score = text_similarity(
             description,
-            group.get("description")
+            complaint.get("description")
+        )
+
+        image_score = image_similarity(
+            image_url,
+            complaint.get("image_url")
         )
 
 
@@ -222,60 +377,126 @@ def find_duplicate_group(
         # Category similarity
         # ----------------------------------------------------
 
-        cat_score = category_similarity(
+        category_score = category_similarity(
             category,
-            group.get("category")
+            complaint.get("category")
         )
 
 
         # ----------------------------------------------------
-        # Overall duplicate score
+        # Duplicate score
         # ----------------------------------------------------
 
         score = calculate_duplicate_score(
-            loc_score,
-            txt_score,
-            cat_score
+            location_score,
+            text_score,
+            image_score,
+            category_score
         )
 
 
         print(
-            f"Checking group {group['id']} | "
+            f"Checking complaint {complaint['id']} | "
             f"distance={distance:.2f}m | "
-            f"location={loc_score:.2f} | "
-            f"text={txt_score:.2f} | "
-            f"category={cat_score:.2f} | "
+            f"location={location_score:.2f} | "
+            f"text={text_score:.2f} | "
+            f"image={image_score:.2f} | "
+            f"category={category_score:.2f} | "
             f"score={score:.2f}"
         )
 
 
         # ----------------------------------------------------
-        # Keep best match
+        # Keep strongest match
         # ----------------------------------------------------
 
         if score > best_score:
 
             best_score = score
-            best_group = group
+            best_match = complaint
 
 
-    # --------------------------------------------------------
-    # Check duplicate threshold
-    # --------------------------------------------------------
+    # ========================================================
+    # CHECK DUPLICATE THRESHOLD
+    # ========================================================
 
     if (
-        best_group
+        best_match
         and best_score >= DUPLICATE_THRESHOLD
     ):
 
-        print(
-            f"Duplicate found: "
-            f"{best_group['id']} "
-            f"(score={best_score:.2f})"
+        existing_cluster_id = (
+            best_match.get("cluster_id")
         )
 
-        return best_group["id"]
 
+        # ----------------------------------------------------
+        # Existing complaint already belongs to cluster
+        # ----------------------------------------------------
+
+        if existing_cluster_id:
+
+            print(
+                f"Duplicate found. "
+                f"Existing cluster: "
+                f"{existing_cluster_id}"
+            )
+
+            return existing_cluster_id
+
+
+        # ----------------------------------------------------
+        # Existing complaint has no cluster yet
+        # Create a new cluster for both complaints
+        # ----------------------------------------------------
+
+        import uuid
+
+        new_cluster_id = str(
+            uuid.uuid4()
+        )
+
+
+        try:
+
+            # Assign cluster to existing complaint
+
+            (
+                supabase
+                .table("complaints")
+                .update({
+                    "cluster_id": new_cluster_id
+                })
+                .eq(
+                    "id",
+                    best_match["id"]
+                )
+                .execute()
+            )
+
+
+            print(
+                f"Created new cluster: "
+                f"{new_cluster_id}"
+            )
+
+
+            return new_cluster_id
+
+
+        except Exception as e:
+
+            print(
+                "Error creating duplicate cluster:",
+                e
+            )
+
+            return None
+
+
+    # ========================================================
+    # NO DUPLICATE
+    # ========================================================
 
     print(
         "No duplicate found."
@@ -283,6 +504,52 @@ def find_duplicate_group(
 
     return None
 
+def create_cluster_id():
+
+    import uuid
+
+    return str(
+        uuid.uuid4()
+    )
+
+def get_people_affected(
+    supabase,
+    cluster_id
+):
+
+    if not cluster_id:
+        return 1
+
+    try:
+
+        response = (
+            supabase
+            .table("complaints")
+            .select("id")
+            .eq(
+                "cluster_id",
+                cluster_id
+            )
+            .execute()
+        )
+
+        complaints = (
+            response.data or []
+        )
+
+        return max(
+            len(complaints),
+            1
+        )
+
+    except Exception as e:
+
+        print(
+            "Error counting affected citizens:",
+            e
+        )
+
+        return 1
 
 # ============================================================
 # 7. LOCAL TESTING
