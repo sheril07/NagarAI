@@ -23,6 +23,8 @@ from supabase import create_client
 
 from Intake.voice_intake import process_voice_complaint
 from Intake.text_intake import process_text_complaint
+from Intake.image_intake import process_image_complaint
+from duplicate import find_duplicate_group
 
 app = FastAPI()
 
@@ -35,6 +37,53 @@ app.add_middleware(
 )
 
 supabase = create_client(os.environ["SUPABASE_URL"], os.environ["SUPABASE_KEY"])
+
+def create_issue_group(
+    category,
+    description,
+    gps_lat,
+    gps_lng
+):
+    response = (
+        supabase
+        .table("issue_groups")
+        .insert({
+            "category": category,
+            "description": description,
+            "gps_lat": gps_lat,
+            "gps_lng": gps_lng,
+            "complaint_count": 1
+        })
+        .execute()
+    )
+
+    if not response.data:
+        return None
+
+    return response.data[0]["id"]
+
+
+def get_issue_group(
+    category,
+    description,
+    gps_lat,
+    gps_lng
+):
+    issue_group_id = find_duplicate_group(
+        supabase,
+        category,
+        description,
+        gps_lat,
+        gps_lng
+    )
+    if issue_group_id:
+        return issue_group_id
+    return create_issue_group(
+        category,
+        description,
+        gps_lat,
+        gps_lng
+    )
 
 
 @app.post("/complaints/text")
