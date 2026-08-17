@@ -4,7 +4,7 @@ scipy
 numpy
 pydub
 anthropic
--e fastapi
+fastapi
 uvicorn
 python-multipart
 supabase
