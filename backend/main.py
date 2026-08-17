@@ -21,7 +21,7 @@ from fastapi import FastAPI, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
 from supabase import create_client
 
-from voice_intake import process_voice_complaint
+from Intake.voice_intake import process_voice_complaint
 from Intake.text_intake import process_text_complaint
 
 app = FastAPI()
