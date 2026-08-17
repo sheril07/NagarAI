@@ -13,6 +13,12 @@
         <!-- Voice Complaint Section -->
         <div class="card">
             <h2>1. Voice Complaint</h2>
+            <div class="card">
+    <h2>1. Voice Complaint (Mic Record)</h2>
+    <button type="button" id="startRec">🎤 Start Recording</button>
+    <button type="button" id="stopRec" disabled>⏹️ Stop & Submit</button>
+    <p id="recStatus">Click Start to record your complaint...</p>
+</div>
             <form id="voiceForm">
                 <input type="file" id="audioFile" accept="audio/*" required>
                 <button type="submit">Submit Voice Complaint</button>
