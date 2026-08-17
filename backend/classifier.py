@@ -22,14 +22,12 @@ Analyze the following citizen complaint:
 
 "{complaint}"
 
-The complaint may be written in:
-- Tamil
-- Hindi
-- English
-- Tamil-English mixed language
-- Hindi-English mixed language
+The complaint may be written in English, Hindi, Tamil, or any other
+Indian language. It may also contain mixed languages, such as
+Tamil-English or Hindi-English.
 
-Understand the meaning and context of the entire complaint.
+You must understand the language and meaning of the complaint regardless
+of which Indian language is used.
 
 Choose EXACTLY ONE category from these allowed categories:
 
@@ -41,16 +39,16 @@ Rules:
 - If multiple categories seem possible, choose the category representing
   the primary civic problem.
 - Do not invent information that the citizen did not provide.
-- Keep the description short and factual.
-- Translate Tamil or Hindi into clear English when necessary.
+- Keep the issue and description short and factual.
+- The "issue" should identify the specific problem mentioned by the citizen.
 
 Return ONLY valid JSON in exactly this format:
 
 {{
-    "language": "detected language",
-    "translated_text": "clear English translation",
+    "input_type": "text",
     "category": "one allowed category",
-    "description": "short factual description"
+    "issue": "short name describing the specific civic issue",
+    "description": "short factual description of the complaint"
 }}
 """
 
@@ -62,7 +60,7 @@ Return ONLY valid JSON in exactly this format:
     print("RAW GEMINI RESPONSE:")
     print(response.text)
 
-    # Clean Markdown code fences if Gemini wraps the JSON in ```json ... ```
+    # Remove Markdown code fences if Gemini returns ```json ... ```
     cleaned_response = response.text.strip()
 
     if cleaned_response.startswith("```json"):
@@ -76,5 +74,8 @@ Return ONLY valid JSON in exactly this format:
     # Safety check: make sure Gemini used one of our official categories
     if result["category"] not in CATEGORIES:
         result["category"] = "Other / General"
+
+    # Always mark this as text input
+    result["input_type"] = "text"
 
     return result
