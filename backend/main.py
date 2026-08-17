@@ -92,6 +92,8 @@ async def submit_text_complaint(
 ):
     fields = process_text_complaint(text)
 
+    issue_group_id = get_issue_group(fields["category"], fields["description"], gps_lat, gps_lng)
+
     row = {
     "source_modality": "text",
     "category": fields["category"],
@@ -99,6 +101,7 @@ async def submit_text_complaint(
     "description": fields["description"],
     "gps_lat": gps_lat,
     "gps_lng": gps_lng,
+    "issue_group_id": issue_group_id,
     "status": "pending",
     }
 
@@ -122,7 +125,8 @@ async def submit_voice_complaint(
         tmp_path = tmp.name
 
     try:
-        fields = process_voice_complaint(tmp_path)  # {category, location_mention, description, raw_transcript, ...}
+        fields = process_voice_complaint(tmp_path) # {category, location_mention, description, raw_transcript, ...}
+        issue_group_id = get_issue_group(fields["category"], fields["description"], gps_lat, gps_lng)
     finally:
         os.remove(tmp_path)
 
@@ -139,6 +143,7 @@ async def submit_voice_complaint(
         "gps_lat": gps_lat,
         "gps_lng": gps_lng,
         "audio_url": audio_url,
+        "issue_group_id" = issue_group_id,
         "status": "pending",
     }
     result = supabase.table("complaints").insert(row).execute()
@@ -161,7 +166,8 @@ async def submit_photo_complaint(
         tmp_path = tmp.name
 
     try:
-        fields = process_photo(tmp_path)
+        fields = process_image_complaint(tmp_path)
+        issue_group_id = get_issue_group(fields["category"], fields["description"], gps_lat, gps_lng)
 
     finally:
         os.remove(tmp_path)
@@ -183,6 +189,7 @@ async def submit_photo_complaint(
         "gps_lat": gps_lat,
         "gps_lng": gps_lng,
         "image_url": image_url,
+        "issue_group_id" = issue_group_id,
         "status": "pending",
     }
     result = supabase \
