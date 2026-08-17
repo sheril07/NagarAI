@@ -17,3 +17,4 @@ torch
 open_clip_torch
 googlemaps
 scikit-learn
+sentence-transformers
