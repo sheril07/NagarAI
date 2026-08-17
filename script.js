@@ -176,7 +176,7 @@ document.getElementById("imageForm").addEventListener("submit", async (e) => {
         formData.append("latitude", coords.lat);
         formData.append("longitude", coords.long);
 
-        const response = await fetch(`${API_BASE_URL}/complaints/photo`, {
+        const response = await fetch(`${API_BASE_URL}/api/image-intake`, {
             method: "POST",
             body: formData
         });
