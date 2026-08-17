@@ -62,7 +62,16 @@ Return ONLY valid JSON in exactly this format:
     print("RAW GEMINI RESPONSE:")
     print(response.text)
 
-    result = json.loads(response.text)
+    # Clean Markdown code fences if Gemini wraps the JSON in ```json ... ```
+    cleaned_response = response.text.strip()
+
+    if cleaned_response.startswith("```json"):
+        cleaned_response = cleaned_response[7:]
+
+    if cleaned_response.endswith("```"):
+        cleaned_response = cleaned_response[:-3]
+
+    result = json.loads(cleaned_response.strip())
 
     # Safety check: make sure Gemini used one of our official categories
     if result["category"] not in CATEGORIES:
