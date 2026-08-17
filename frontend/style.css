@@ -43,3 +43,30 @@ button:hover {
     padding: 10px;
     border-radius: 4px;
 }
+.gps-badge {
+    background-color: #e2e8f0;
+    padding: 10px 15px;
+    border-radius: 6px;
+    font-weight: bold;
+    margin-bottom: 20px;
+    color: #334155;
+}
+
+.voice-controls {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.divider {
+    border: none;
+    border-top: 1px solid #e2e8f0;
+    margin: 15px 0;
+}
+
+label {
+    display: block;
+    margin-bottom: 5px;
+    font-size: 0.9em;
+    color: #64748b;
+}
