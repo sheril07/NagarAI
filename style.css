@@ -1,6 +1,34 @@
-/* ================================
-   NagarAI — Civic Intake UI
-   ================================ */
+/* =========================================================
+   NagarAI — Modern Civic Intake UI
+   ========================================================= */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+:root {
+    --primary: #2563eb;
+    --primary-dark: #1d4ed8;
+    --primary-light: #eff6ff;
+
+    --navy: #0f172a;
+    --text: #1e293b;
+    --muted: #64748b;
+    --light-muted: #94a3b8;
+
+    --background: #f1f5f9;
+    --surface: #ffffff;
+    --border: #e2e8f0;
+
+    --success: #16a34a;
+    --danger: #dc2626;
+
+    --radius: 18px;
+    --shadow: 0 10px 30px rgba(15, 23, 42, 0.07);
+}
+
+
+/* =========================================================
+   GLOBAL
+   ========================================================= */
 
 * {
     box-sizing: border-box;
@@ -8,227 +36,615 @@
     padding: 0;
 }
 
-body {
-    font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
-    min-height: 100vh;
-    background: #f5f7fb;
-    color: #172033;
-    padding: 40px 20px;
+html {
+    scroll-behavior: smooth;
 }
 
-/* Main container */
+body {
+    font-family: "Inter", -apple-system, BlinkMacSystemFont,
+        "Segoe UI", Arial, sans-serif;
+
+    min-height: 100vh;
+
+    background:
+        radial-gradient(
+            circle at top left,
+            rgba(37, 99, 235, 0.08),
+            transparent 35%
+        ),
+        var(--background);
+
+    color: var(--text);
+
+    padding: 45px 20px;
+}
+
+
+/* =========================================================
+   MAIN CONTAINER
+   ========================================================= */
 
 .container {
     width: 100%;
-    max-width: 850px;
+    max-width: 900px;
     margin: 0 auto;
 }
 
-/* Header */
+
+/* =========================================================
+   HEADER
+   ========================================================= */
 
 h1 {
-    font-size: 2.4rem;
-    font-weight: 750;
-    letter-spacing: -1px;
-    margin-bottom: 8px;
+    position: relative;
+
+    font-size: clamp(2rem, 5vw, 3rem);
+    font-weight: 800;
+
+    letter-spacing: -1.5px;
+
+    color: var(--navy);
+
+    margin-bottom: 12px;
+}
+
+h1::before {
+    content: "🏙️";
+
+    display: inline-flex;
+
+    align-items: center;
+    justify-content: center;
+
+    width: 52px;
+    height: 52px;
+
+    margin-right: 12px;
+
+    font-size: 25px;
+
+    background: var(--primary-light);
+
+    border-radius: 15px;
+
+    vertical-align: middle;
+
+    box-shadow:
+        0 6px 20px rgba(37, 99, 235, 0.12);
 }
 
 h1::after {
     content: "AI-powered civic complaint reporting";
+
     display: block;
-    font-size: 1rem;
-    font-weight: 400;
+
+    font-size: 0.95rem;
+    font-weight: 500;
+
     letter-spacing: 0;
-    color: #64748b;
-    margin-top: 8px;
+
+    color: var(--muted);
+
+    margin-top: 12px;
+
+    margin-left: 67px;
 }
 
-/* GPS */
+
+/* =========================================================
+   GPS STATUS
+   ========================================================= */
 
 .gps-badge {
-    margin: 28px 0;
+    position: relative;
+
+    display: flex;
+    align-items: center;
+
+    margin: 30px 0;
+
     padding: 16px 20px;
-    background: #ffffff;
-    border: 1px solid #dbe3ef;
-    border-radius: 12px;
-    color: #334155;
-    font-size: 0.95rem;
-    box-shadow: 0 3px 12px rgba(15, 23, 42, 0.05);
+
+    background: rgba(255, 255, 255, 0.85);
+
+    backdrop-filter: blur(10px);
+
+    border: 1px solid var(--border);
+
+    border-radius: 14px;
+
+    color: var(--muted);
+
+    font-size: 0.9rem;
+
+    box-shadow: 0 5px 20px rgba(15, 23, 42, 0.05);
+}
+
+.gps-badge::before {
+    content: "";
+
+    width: 9px;
+    height: 9px;
+
+    background: var(--success);
+
+    border-radius: 50%;
+
+    margin-right: 10px;
+
+    box-shadow:
+        0 0 0 4px rgba(22, 163, 74, 0.12);
 }
 
 .gps-badge span {
-    font-weight: 600;
+    margin-left: 5px;
+
+    font-weight: 700;
+
+    color: var(--text);
 }
 
-/* Cards */
+
+/* =========================================================
+   COMPLAINT CARDS
+   ========================================================= */
 
 .card {
-    background: #ffffff;
-    padding: 26px;
-    margin-bottom: 20px;
-    border: 1px solid #e2e8f0;
-    border-radius: 16px;
-    box-shadow: 0 4px 16px rgba(15, 23, 42, 0.05);
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    position: relative;
+
+    background: var(--surface);
+
+    padding: 30px;
+
+    margin-bottom: 22px;
+
+    border: 1px solid var(--border);
+
+    border-radius: var(--radius);
+
+    box-shadow: var(--shadow);
+
+    overflow: hidden;
+
+    transition:
+        transform 0.25s ease,
+        box-shadow 0.25s ease,
+        border-color 0.25s ease;
 }
+
+
+/* Decorative accent */
+
+.card::before {
+    content: "";
+
+    position: absolute;
+
+    top: 0;
+    left: 0;
+
+    width: 100%;
+    height: 4px;
+
+    background: linear-gradient(
+        90deg,
+        var(--primary),
+        #60a5fa
+    );
+}
+
 
 .card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+    transform: translateY(-4px);
+
+    border-color: #bfdbfe;
+
+    box-shadow:
+        0 16px 40px rgba(15, 23, 42, 0.09);
 }
+
+
+/* =========================================================
+   CARD HEADINGS
+   ========================================================= */
 
 .card h2 {
+    display: flex;
+    align-items: center;
+
     font-size: 1.25rem;
-    margin-bottom: 18px;
-    color: #1e293b;
+
+    font-weight: 700;
+
+    color: var(--navy);
+
+    margin-bottom: 20px;
 }
 
-/* Voice controls */
+
+/* Add visual icons to each section */
+
+.card:nth-of-type(2) h2::before {
+    content: "🎤";
+}
+
+.card:nth-of-type(3) h2::before {
+    content: "📝";
+}
+
+.card:nth-of-type(4) h2::before {
+    content: "📷";
+}
+
+.card h2::before {
+    display: inline-flex;
+
+    align-items: center;
+    justify-content: center;
+
+    width: 40px;
+    height: 40px;
+
+    margin-right: 12px;
+
+    background: var(--primary-light);
+
+    border-radius: 11px;
+
+    font-size: 19px;
+}
+
+
+/* =========================================================
+   VOICE CONTROLS
+   ========================================================= */
 
 .voice-controls {
     display: flex;
+
     gap: 12px;
-    margin-bottom: 12px;
+
+    margin-bottom: 14px;
+
     flex-wrap: wrap;
 }
 
 .voice-controls button {
     flex: 1;
-    min-width: 180px;
+
+    min-width: 190px;
 }
 
-/* Buttons */
+
+/* =========================================================
+   BUTTONS
+   ========================================================= */
 
 button {
-    background: #2563eb;
-    color: #ffffff;
+    position: relative;
+
+    background: linear-gradient(
+        135deg,
+        var(--primary),
+        #3b82f6
+    );
+
+    color: white;
+
     border: none;
-    padding: 12px 18px;
-    border-radius: 9px;
-    font-size: 0.95rem;
-    font-weight: 600;
+
+    padding: 13px 20px;
+
+    border-radius: 10px;
+
+    font-family: inherit;
+
+    font-size: 0.9rem;
+
+    font-weight: 700;
+
     cursor: pointer;
-    transition: all 0.2s ease;
+
+    box-shadow:
+        0 5px 12px rgba(37, 99, 235, 0.18);
+
+    transition:
+        transform 0.2s ease,
+        box-shadow 0.2s ease,
+        background 0.2s ease;
 }
 
 button:hover {
-    background: #1d4ed8;
-    transform: translateY(-1px);
+    background: linear-gradient(
+        135deg,
+        var(--primary-dark),
+        var(--primary)
+    );
+
+    transform: translateY(-2px);
+
+    box-shadow:
+        0 8px 18px rgba(37, 99, 235, 0.25);
 }
 
 button:active {
     transform: translateY(0);
+
+    box-shadow:
+        0 3px 8px rgba(37, 99, 235, 0.18);
 }
 
 button:disabled {
     background: #cbd5e1;
+
+    color: #64748b;
+
     cursor: not-allowed;
+
+    box-shadow: none;
+
     transform: none;
 }
 
-/* Recording status */
+
+/* =========================================================
+   RECORDING STATUS
+   ========================================================= */
 
 #recStatus {
-    color: #64748b;
-    font-size: 0.9rem;
-    margin-top: 8px;
+    display: flex;
+    align-items: center;
+
+    min-height: 38px;
+
+    padding: 10px 13px;
+
+    background: #f8fafc;
+
+    border-radius: 9px;
+
+    border: 1px solid #edf2f7;
+
+    color: var(--muted);
+
+    font-size: 0.85rem;
+
+    line-height: 1.4;
 }
 
-/* Divider */
+
+/* =========================================================
+   DIVIDER
+   ========================================================= */
 
 .divider {
     border: none;
-    border-top: 1px solid #e2e8f0;
-    margin: 22px 0;
+
+    border-top: 1px solid var(--border);
+
+    margin: 25px 0;
 }
 
-/* Labels */
+
+/* =========================================================
+   LABELS
+   ========================================================= */
 
 label {
     display: block;
+
     margin-bottom: 8px;
-    font-size: 0.9rem;
+
+    font-size: 0.85rem;
+
     font-weight: 600;
+
     color: #475569;
 }
 
-/* Text areas */
+
+/* =========================================================
+   TEXTAREAS
+   ========================================================= */
 
 textarea {
     width: 100%;
-    min-height: 110px;
+
+    min-height: 120px;
+
     resize: vertical;
-    padding: 13px 15px;
-    margin-bottom: 12px;
+
+    padding: 14px 16px;
+
+    margin-bottom: 13px;
+
     border: 1px solid #cbd5e1;
-    border-radius: 10px;
+
+    border-radius: 11px;
+
     background: #f8fafc;
-    color: #1e293b;
+
+    color: var(--text);
+
     font-family: inherit;
-    font-size: 0.95rem;
-    line-height: 1.5;
+
+    font-size: 0.9rem;
+
+    line-height: 1.55;
+
     outline: none;
-    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+
+    transition:
+        border-color 0.2s ease,
+        box-shadow 0.2s ease,
+        background 0.2s ease;
+}
+
+textarea:hover {
+    border-color: #94a3b8;
 }
 
 textarea:focus {
-    border-color: #2563eb;
-    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
-    background: #ffffff;
+    border-color: var(--primary);
+
+    background: white;
+
+    box-shadow:
+        0 0 0 4px rgba(37, 99, 235, 0.1);
 }
 
 textarea::placeholder {
-    color: #94a3b8;
+    color: var(--light-muted);
 }
 
-/* File inputs */
+
+/* =========================================================
+   FILE INPUTS
+   ========================================================= */
 
 input[type="file"] {
     width: 100%;
-    padding: 12px;
-    margin-bottom: 12px;
-    border: 1px dashed #cbd5e1;
-    border-radius: 10px;
+
+    padding: 15px;
+
+    margin-bottom: 13px;
+
+    border: 2px dashed #cbd5e1;
+
+    border-radius: 12px;
+
     background: #f8fafc;
-    color: #64748b;
+
+    color: var(--muted);
+
+    font-family: inherit;
+
+    font-size: 0.85rem;
+
     cursor: pointer;
+
+    transition:
+        border-color 0.2s ease,
+        background 0.2s ease;
 }
 
 input[type="file"]:hover {
-    border-color: #2563eb;
-    background: #f1f5ff;
+    border-color: var(--primary);
+
+    background: var(--primary-light);
 }
 
-/* Status */
+
+/* =========================================================
+   STATUS BOX
+   ========================================================= */
 
 .status-box {
-    margin-top: 24px;
-    padding: 18px 20px;
-    background: #ffffff;
-    border: 1px solid #dbe3ef;
-    border-left: 4px solid #2563eb;
-    border-radius: 12px;
-    color: #475569;
+    position: relative;
+
+    margin-top: 28px;
+
+    padding: 20px 22px;
+
+    background: white;
+
+    border: 1px solid var(--border);
+
+    border-radius: 14px;
+
+    color: var(--muted);
+
     white-space: pre-wrap;
-    line-height: 1.5;
-    font-size: 0.9rem;
-    box-shadow: 0 3px 12px rgba(15, 23, 42, 0.04);
+
+    line-height: 1.55;
+
+    font-size: 0.85rem;
+
+    box-shadow:
+        0 5px 20px rgba(15, 23, 42, 0.05);
 }
 
-/* Mobile */
 
-@media (max-width: 600px) {
+/* Status indicator */
+
+.status-box::before {
+    content: "●";
+
+    color: var(--success);
+
+    margin-right: 8px;
+
+    font-size: 0.75rem;
+}
+
+
+/* =========================================================
+   FORM SPACING
+   ========================================================= */
+
+form {
+    width: 100%;
+}
+
+
+/* =========================================================
+   FOCUS ACCESSIBILITY
+   ========================================================= */
+
+button:focus-visible,
+textarea:focus-visible,
+input:focus-visible {
+    outline: 3px solid rgba(37, 99, 235, 0.25);
+
+    outline-offset: 2px;
+}
+
+
+/* =========================================================
+   MOBILE
+   ========================================================= */
+
+@media (max-width: 700px) {
 
     body {
-        padding: 24px 14px;
+        padding: 25px 14px;
+    }
+
+    .container {
+        max-width: 100%;
     }
 
     h1 {
-        font-size: 1.9rem;
+        font-size: 2rem;
+    }
+
+    h1::before {
+        width: 44px;
+        height: 44px;
+
+        font-size: 21px;
+
+        margin-right: 8px;
+    }
+
+    h1::after {
+        margin-left: 0;
+
+        font-size: 0.85rem;
+    }
+
+    .gps-badge {
+        margin: 22px 0;
     }
 
     .card {
-        padding: 20px;
+        padding: 22px;
+
+        border-radius: 15px;
+    }
+
+    .card h2 {
+        font-size: 1.1rem;
     }
 
     .voice-controls {
@@ -237,7 +653,38 @@ input[type="file"]:hover {
 
     .voice-controls button {
         width: 100%;
+
+        min-width: 0;
     }
+
+    button {
+        width: 100%;
+    }
+}
+
+
+/* =========================================================
+   VERY SMALL SCREENS
+   ========================================================= */
+
+@media (max-width: 400px) {
+
+    body {
+        padding: 18px 10px;
+    }
+
+    .card {
+        padding: 18px;
+    }
+
+    h1 {
+        font-size: 1.7rem;
+    }
+
+    h1::before {
+        display: none;
+    }
+}
 
     button {
         width: 100%;
