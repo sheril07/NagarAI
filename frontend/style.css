@@ -1,72 +1,245 @@
-body {
-    font-family: Arial, sans-serif;
-    background-color: #f4f6f8;
-    padding: 20px;
+/* ================================
+   NagarAI — Civic Intake UI
+   ================================ */
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
 }
 
+body {
+    font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+    min-height: 100vh;
+    background: #f5f7fb;
+    color: #172033;
+    padding: 40px 20px;
+}
+
+/* Main container */
+
 .container {
-    max-width: 600px;
+    width: 100%;
+    max-width: 850px;
     margin: 0 auto;
 }
 
+/* Header */
+
+h1 {
+    font-size: 2.4rem;
+    font-weight: 750;
+    letter-spacing: -1px;
+    margin-bottom: 8px;
+}
+
+h1::after {
+    content: "AI-powered civic complaint reporting";
+    display: block;
+    font-size: 1rem;
+    font-weight: 400;
+    letter-spacing: 0;
+    color: #64748b;
+    margin-top: 8px;
+}
+
+/* GPS */
+
+.gps-badge {
+    margin: 28px 0;
+    padding: 16px 20px;
+    background: #ffffff;
+    border: 1px solid #dbe3ef;
+    border-radius: 12px;
+    color: #334155;
+    font-size: 0.95rem;
+    box-shadow: 0 3px 12px rgba(15, 23, 42, 0.05);
+}
+
+.gps-badge span {
+    font-weight: 600;
+}
+
+/* Cards */
+
 .card {
     background: #ffffff;
-    padding: 20px;
+    padding: 26px;
     margin-bottom: 20px;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    box-shadow: 0 4px 16px rgba(15, 23, 42, 0.05);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-textarea {
-    width: 100%;
-    height: 80px;
-    margin-bottom: 10px;
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
 }
 
-button {
-    background-color: #007bff;
-    color: white;
-    border: none;
-    padding: 10px 15px;
-    border-radius: 4px;
-    cursor: pointer;
+.card h2 {
+    font-size: 1.25rem;
+    margin-bottom: 18px;
+    color: #1e293b;
 }
 
-button:hover {
-    background-color: #0056b3;
-}
-
-.status-box {
-    margin-top: 15px;
-    white-space: pre-wrap;
-    background: #e9ecef;
-    padding: 10px;
-    border-radius: 4px;
-}
-.gps-badge {
-    background-color: #e2e8f0;
-    padding: 10px 15px;
-    border-radius: 6px;
-    font-weight: bold;
-    margin-bottom: 20px;
-    color: #334155;
-}
+/* Voice controls */
 
 .voice-controls {
     display: flex;
-    gap: 10px;
-    margin-bottom: 10px;
+    gap: 12px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
 }
+
+.voice-controls button {
+    flex: 1;
+    min-width: 180px;
+}
+
+/* Buttons */
+
+button {
+    background: #2563eb;
+    color: #ffffff;
+    border: none;
+    padding: 12px 18px;
+    border-radius: 9px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+button:hover {
+    background: #1d4ed8;
+    transform: translateY(-1px);
+}
+
+button:active {
+    transform: translateY(0);
+}
+
+button:disabled {
+    background: #cbd5e1;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* Recording status */
+
+#recStatus {
+    color: #64748b;
+    font-size: 0.9rem;
+    margin-top: 8px;
+}
+
+/* Divider */
 
 .divider {
     border: none;
     border-top: 1px solid #e2e8f0;
-    margin: 15px 0;
+    margin: 22px 0;
 }
+
+/* Labels */
 
 label {
     display: block;
-    margin-bottom: 5px;
-    font-size: 0.9em;
+    margin-bottom: 8px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #475569;
+}
+
+/* Text areas */
+
+textarea {
+    width: 100%;
+    min-height: 110px;
+    resize: vertical;
+    padding: 13px 15px;
+    margin-bottom: 12px;
+    border: 1px solid #cbd5e1;
+    border-radius: 10px;
+    background: #f8fafc;
+    color: #1e293b;
+    font-family: inherit;
+    font-size: 0.95rem;
+    line-height: 1.5;
+    outline: none;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+textarea:focus {
+    border-color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+    background: #ffffff;
+}
+
+textarea::placeholder {
+    color: #94a3b8;
+}
+
+/* File inputs */
+
+input[type="file"] {
+    width: 100%;
+    padding: 12px;
+    margin-bottom: 12px;
+    border: 1px dashed #cbd5e1;
+    border-radius: 10px;
+    background: #f8fafc;
     color: #64748b;
+    cursor: pointer;
+}
+
+input[type="file"]:hover {
+    border-color: #2563eb;
+    background: #f1f5ff;
+}
+
+/* Status */
+
+.status-box {
+    margin-top: 24px;
+    padding: 18px 20px;
+    background: #ffffff;
+    border: 1px solid #dbe3ef;
+    border-left: 4px solid #2563eb;
+    border-radius: 12px;
+    color: #475569;
+    white-space: pre-wrap;
+    line-height: 1.5;
+    font-size: 0.9rem;
+    box-shadow: 0 3px 12px rgba(15, 23, 42, 0.04);
+}
+
+/* Mobile */
+
+@media (max-width: 600px) {
+
+    body {
+        padding: 24px 14px;
+    }
+
+    h1 {
+        font-size: 1.9rem;
+    }
+
+    .card {
+        padding: 20px;
+    }
+
+    .voice-controls {
+        flex-direction: column;
+    }
+
+    .voice-controls button {
+        width: 100%;
+    }
+
+    button {
+        width: 100%;
+    }
 }
