@@ -41,3 +41,16 @@ eg template
   }
 
 }
+
+ Geo-distance 📍
+
+This uses the latitude and longitude of reports and calculates how physically close they are.
+
+For example:
+
+Report A: (12.85, 80.22)
+Report B: (12.851, 80.221)
+
+They're geographically close.
+
+This can be calculated using something like the Haversine distance formula. You don't necessarily need a geolocation API for this.
