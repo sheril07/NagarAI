@@ -8,8 +8,5 @@ opencv-python
 pillow
 ultralytics
 torch
-transformers
 googlemaps
-geopy
 scikit-learn
-requests
