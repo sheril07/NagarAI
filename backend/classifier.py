@@ -59,6 +59,9 @@ Return ONLY valid JSON in exactly this format:
         contents=prompt
     )
 
+    print("RAW GEMINI RESPONSE:")
+    print(response.text)
+
     result = json.loads(response.text)
 
     # Safety check: make sure Gemini used one of our official categories
