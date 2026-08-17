@@ -85,3 +85,53 @@ async def submit_voice_complaint(
     }
     result = supabase.table("complaints").insert(row).execute()
     return {"complaint": result.data[0]}
+
+@app.post("/complaints/photo")
+async def submit_photo_complaint(
+    image: UploadFile = File(...),
+    gps_lat: Optional[float] = Form(None),
+    gps_lng: Optional[float] = Form(None),
+):
+    image_bytes = await image.read()
+    suffix = os.path.splitext(image.filename)[1] or ".jpg"
+    with tempfile.NamedTemporaryFile(
+        delete=False,
+        suffix=suffix
+    ) as tmp:
+
+        tmp.write(image_bytes)
+        tmp_path = tmp.name
+
+    try:
+        fields = process_photo(tmp_path)
+
+    finally:
+        os.remove(tmp_path)
+    storage_path = f"photo/{uuid.uuid4()}{suffix}"
+    supabase.storage \
+        .from_("complaint-images") \
+        .upload(
+            storage_path,
+            image_bytes
+        )
+    image_url = supabase.storage \
+        .from_("complaint-images") \
+        .get_public_url(storage_path)
+    row = {
+        "source_modality": "photo",
+        "category": fields["category"],
+        "issue": fields["issue"],
+        "description": fields["description"],
+        "gps_lat": gps_lat,
+        "gps_lng": gps_lng,
+        "image_url": image_url,
+        "severity_features": fields["severity_features"],
+        "status": "pending",
+    }
+    result = supabase \
+        .table("complaints") \
+        .insert(row) \
+        .execute()
+    return {
+        "complaint": result.data[0]
+    }
