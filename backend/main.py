@@ -542,7 +542,7 @@ async def submit_photo_complaint(
     (
         supabase
         .storage
-        .from_("complaint-images")
+        .from_("complaint-image")
         .upload(
             storage_path,
             image_bytes
@@ -552,7 +552,7 @@ async def submit_photo_complaint(
     image_url = (
         supabase
         .storage
-        .from_("complaint-images")
+        .from_("complaint-image")
         .get_public_url(
             storage_path
         )
