@@ -30,6 +30,8 @@ from duplicate import (
     create_cluster_id,
     get_people_affected
 )
+from severity import calculate_severity
+from priority import calculate_priority
 
 app = FastAPI()
 
@@ -46,22 +48,20 @@ supabase = create_client(os.environ["SUPABASE_URL"], os.environ["SUPABASE_KEY"])
 async def assign_duplicate_cluster(
     complaint_id,
     category,
+    issue,
     description,
     gps_lat,
-    gps_lng
+    gps_lng,
+    created_at
 ):
     """
-    Finds an existing duplicate cluster.
-
-    If no duplicate exists:
-        creates a new cluster.
-
-    Then updates people_affected
-    for all complaints in that cluster.
+    Finds/creates a duplicate cluster, updates the number
+    of affected citizens, calculates severity, and calculates
+    priority.
     """
 
     # --------------------------------------------------------
-    # Find an existing duplicate
+    # 1. Find existing duplicate
     # --------------------------------------------------------
 
     cluster_id = find_duplicate_group(
@@ -75,7 +75,7 @@ async def assign_duplicate_cluster(
 
 
     # --------------------------------------------------------
-    # No duplicate → create new cluster
+    # 2. No duplicate → create new cluster
     # --------------------------------------------------------
 
     if cluster_id is None:
@@ -97,7 +97,7 @@ async def assign_duplicate_cluster(
 
 
     # --------------------------------------------------------
-    # Count complaints in cluster
+    # 3. Count affected citizens
     # --------------------------------------------------------
 
     people_affected = get_people_affected(
@@ -107,14 +107,47 @@ async def assign_duplicate_cluster(
 
 
     # --------------------------------------------------------
-    # Update affected count for entire cluster
+    # 4. Calculate severity
+    # --------------------------------------------------------
+
+    severity_result = calculate_severity(
+        category=category,
+        issue=issue,
+        description=description,
+        affected_citizens=people_affected,
+        frequency=people_affected,
+        location_text=None
+    )
+
+    severity = severity_result["severity"]
+
+
+    # --------------------------------------------------------
+    # 5. Calculate priority
+    # --------------------------------------------------------
+
+    priority_result = calculate_priority(
+        severity=severity,
+        people_affected=people_affected,
+        created_at=created_at
+    )
+
+    priority_score = priority_result[
+        "priority_score"
+    ]
+
+
+    # --------------------------------------------------------
+    # 6. Update entire cluster
     # --------------------------------------------------------
 
     (
         supabase
         .table("complaints")
         .update({
-            "people_affected": people_affected
+            "people_affected": people_affected,
+            "severity": severity,
+            "priority_score": priority_score
         })
         .eq(
             "cluster_id",
@@ -124,8 +157,15 @@ async def assign_duplicate_cluster(
     )
 
 
-    return cluster_id, people_affected
-
+    return {
+        "cluster_id": cluster_id,
+        "people_affected": people_affected,
+        "severity": severity,
+        "severity_reason": severity_result[
+            "severity_reason"
+        ],
+        "priority_score": priority_score
+    }
 @app.post("/complaints/text")
 async def submit_text_complaint(
     text: str = Form(...),
@@ -133,7 +173,18 @@ async def submit_text_complaint(
     gps_lng: Optional[float] = Form(None),
 ):
 
-    fields = process_text_complaint(text)
+    # --------------------------------------------------------
+    # TEXT INTAKE
+    # --------------------------------------------------------
+
+    fields = process_text_complaint(
+        text
+    )
+
+
+    # --------------------------------------------------------
+    # INSERT COMPLAINT
+    # --------------------------------------------------------
 
     row = {
         "source_modality": "text",
@@ -145,6 +196,7 @@ async def submit_text_complaint(
         "status": "pending",
     }
 
+
     result = (
         supabase
         .table("complaints")
@@ -152,20 +204,56 @@ async def submit_text_complaint(
         .execute()
     )
 
+
     complaint = result.data[0]
 
-    cluster_id, people_affected = (
-        await assign_duplicate_cluster(
-            complaint_id=complaint["id"],
-            category=complaint["category"],
-            description=complaint["description"],
-            gps_lat=complaint["gps_lat"],
-            gps_lng=complaint["gps_lng"],
-        )
+
+    # --------------------------------------------------------
+    # DUPLICATE + SEVERITY + PRIORITY
+    # --------------------------------------------------------
+
+    cluster_result = await assign_duplicate_cluster(
+
+        complaint_id=complaint["id"],
+
+        category=complaint["category"],
+
+        issue=complaint["category"],
+
+        description=complaint["description"],
+
+        gps_lat=complaint["gps_lat"],
+
+        gps_lng=complaint["gps_lng"],
+
+        created_at=complaint["created_at"]
     )
 
-    complaint["cluster_id"] = cluster_id
-    complaint["people_affected"] = people_affected
+
+    # --------------------------------------------------------
+    # Add calculated values to response
+    # --------------------------------------------------------
+
+    complaint["cluster_id"] = (
+        cluster_result["cluster_id"]
+    )
+
+    complaint["people_affected"] = (
+        cluster_result["people_affected"]
+    )
+
+    complaint["severity"] = (
+        cluster_result["severity"]
+    )
+
+    complaint["priority_score"] = (
+        cluster_result["priority_score"]
+    )
+
+    complaint["severity_reason"] = (
+        cluster_result["severity_reason"]
+    )
+
 
     return {
         "complaint": complaint
@@ -178,6 +266,10 @@ async def submit_voice_complaint(
     gps_lng: Optional[float] = Form(None),
 ):
 
+    # --------------------------------------------------------
+    # READ AUDIO
+    # --------------------------------------------------------
+
     audio_bytes = await audio.read()
 
     suffix = (
@@ -187,7 +279,7 @@ async def submit_voice_complaint(
 
 
     # --------------------------------------------------------
-    # Temporary audio file
+    # TEMPORARY AUDIO FILE
     # --------------------------------------------------------
 
     with tempfile.NamedTemporaryFile(
@@ -196,10 +288,15 @@ async def submit_voice_complaint(
     ) as tmp:
 
         tmp.write(audio_bytes)
+
         tmp_path = tmp.name
 
 
     try:
+
+        # ----------------------------------------------------
+        # VOICE INTAKE
+        # ----------------------------------------------------
 
         fields = process_voice_complaint(
             tmp_path,
@@ -210,16 +307,20 @@ async def submit_voice_complaint(
     finally:
 
         if os.path.exists(tmp_path):
-            os.remove(tmp_path)
+
+            os.remove(
+                tmp_path
+            )
 
 
     # --------------------------------------------------------
-    # Store audio
+    # UPLOAD ORIGINAL AUDIO
     # --------------------------------------------------------
 
     storage_path = (
         f"voice/{uuid.uuid4()}{suffix}"
     )
+
 
     (
         supabase
@@ -230,6 +331,7 @@ async def submit_voice_complaint(
             audio_bytes
         )
     )
+
 
     audio_url = (
         supabase
@@ -242,20 +344,32 @@ async def submit_voice_complaint(
 
 
     # --------------------------------------------------------
-    # Insert complaint
+    # INSERT COMPLAINT
     # --------------------------------------------------------
 
     row = {
         "source_modality": "voice",
+
         "category": fields["category"],
-        "location_mention": fields["location_mention"],
-        "description": fields["description"],
+
+        "location_mention": fields[
+            "location_mention"
+        ],
+
+        "description": fields[
+            "description"
+        ],
+
         "raw_transcript": fields.get(
             "raw_transcript"
         ),
+
         "gps_lat": gps_lat,
+
         "gps_lng": gps_lng,
+
         "audio_url": audio_url,
+
         "status": "pending",
     }
 
@@ -272,22 +386,50 @@ async def submit_voice_complaint(
 
 
     # --------------------------------------------------------
-    # Deduplication
+    # DUPLICATE + SEVERITY + PRIORITY
     # --------------------------------------------------------
 
-    cluster_id, people_affected = (
-        await assign_duplicate_cluster(
-            complaint_id=complaint["id"],
-            category=complaint["category"],
-            description=complaint["description"],
-            gps_lat=complaint["gps_lat"],
-            gps_lng=complaint["gps_lng"],
-        )
+    cluster_result = await assign_duplicate_cluster(
+
+        complaint_id=complaint["id"],
+
+        category=complaint["category"],
+
+        issue=complaint["category"],
+
+        description=complaint["description"],
+
+        gps_lat=complaint["gps_lat"],
+
+        gps_lng=complaint["gps_lng"],
+
+        created_at=complaint["created_at"]
     )
 
 
-    complaint["cluster_id"] = cluster_id
-    complaint["people_affected"] = people_affected
+    # --------------------------------------------------------
+    # ADD CALCULATED VALUES TO RESPONSE
+    # --------------------------------------------------------
+
+    complaint["cluster_id"] = (
+        cluster_result["cluster_id"]
+    )
+
+    complaint["people_affected"] = (
+        cluster_result["people_affected"]
+    )
+
+    complaint["severity"] = (
+        cluster_result["severity"]
+    )
+
+    complaint["priority_score"] = (
+        cluster_result["priority_score"]
+    )
+
+    complaint["severity_reason"] = (
+        cluster_result["severity_reason"]
+    )
 
 
     return {
@@ -301,6 +443,10 @@ async def submit_photo_complaint(
     gps_lng: Optional[float] = Form(None),
 ):
 
+    # --------------------------------------------------------
+    # READ IMAGE
+    # --------------------------------------------------------
+
     image_bytes = await image.read()
 
     suffix = (
@@ -310,7 +456,7 @@ async def submit_photo_complaint(
 
 
     # --------------------------------------------------------
-    # Temporary image file
+    # TEMPORARY IMAGE FILE
     # --------------------------------------------------------
 
     with tempfile.NamedTemporaryFile(
@@ -319,10 +465,15 @@ async def submit_photo_complaint(
     ) as tmp:
 
         tmp.write(image_bytes)
+
         tmp_path = tmp.name
 
 
     try:
+
+        # ----------------------------------------------------
+        # PHOTO INTAKE
+        # ----------------------------------------------------
 
         fields = process_image_complaint(
             tmp_path
@@ -331,16 +482,20 @@ async def submit_photo_complaint(
     finally:
 
         if os.path.exists(tmp_path):
-            os.remove(tmp_path)
+
+            os.remove(
+                tmp_path
+            )
 
 
     # --------------------------------------------------------
-    # Store image
+    # UPLOAD IMAGE
     # --------------------------------------------------------
 
     storage_path = (
         f"photo/{uuid.uuid4()}{suffix}"
     )
+
 
     (
         supabase
@@ -351,6 +506,7 @@ async def submit_photo_complaint(
             image_bytes
         )
     )
+
 
     image_url = (
         supabase
@@ -363,16 +519,26 @@ async def submit_photo_complaint(
 
 
     # --------------------------------------------------------
-    # Insert complaint
+    # INSERT COMPLAINT
     # --------------------------------------------------------
 
     row = {
         "source_modality": "photo",
-        "category": fields["category"],
-        "description": fields["description"],
+
+        "category": fields[
+            "category"
+        ],
+
+        "description": fields[
+            "description"
+        ],
+
         "gps_lat": gps_lat,
+
         "gps_lng": gps_lng,
+
         "image_url": image_url,
+
         "status": "pending",
     }
 
@@ -389,22 +555,50 @@ async def submit_photo_complaint(
 
 
     # --------------------------------------------------------
-    # Deduplication
+    # DUPLICATE + SEVERITY + PRIORITY
     # --------------------------------------------------------
 
-    cluster_id, people_affected = (
-        await assign_duplicate_cluster(
-            complaint_id=complaint["id"],
-            category=complaint["category"],
-            description=complaint["description"],
-            gps_lat=complaint["gps_lat"],
-            gps_lng=complaint["gps_lng"],
-        )
+    cluster_result = await assign_duplicate_cluster(
+
+        complaint_id=complaint["id"],
+
+        category=complaint["category"],
+
+        issue=complaint["category"],
+
+        description=complaint["description"],
+
+        gps_lat=complaint["gps_lat"],
+
+        gps_lng=complaint["gps_lng"],
+
+        created_at=complaint["created_at"]
     )
 
 
-    complaint["cluster_id"] = cluster_id
-    complaint["people_affected"] = people_affected
+    # --------------------------------------------------------
+    # ADD CALCULATED VALUES TO RESPONSE
+    # --------------------------------------------------------
+
+    complaint["cluster_id"] = (
+        cluster_result["cluster_id"]
+    )
+
+    complaint["people_affected"] = (
+        cluster_result["people_affected"]
+    )
+
+    complaint["severity"] = (
+        cluster_result["severity"]
+    )
+
+    complaint["priority_score"] = (
+        cluster_result["priority_score"]
+    )
+
+    complaint["severity_reason"] = (
+        cluster_result["severity_reason"]
+    )
 
 
     return {
