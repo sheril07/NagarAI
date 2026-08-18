@@ -4,7 +4,6 @@ scipy
 numpy
 pydub
 google-genai
-audioop-lts
 groq
 anthropic
 fastapi
