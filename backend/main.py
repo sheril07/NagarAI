@@ -1,39 +1,74 @@
 """
-NagarAI backend - voice complaint endpoint.
+NagarAI backend - complaint endpoints.
 
-Wraps voice_intake.process_voice_complaint() as an HTTP endpoint the
-frontend calls on submit. GPS coordinates are captured client-side
-(navigator.geolocation) at the moment the user hits submit, and sent
-alongside the audio file in the same request.
+Handles text, voice, and photo complaints.
+GPS coordinates are captured client-side and sent with the complaint.
 
-Env vars needed: SUPABASE_URL, SUPABASE_KEY, ANTHROPIC_API_KEY
-
-Run:
-    uvicorn main:app --reload
+Env vars needed:
+    SUPABASE_URL
+    SUPABASE_KEY
+    ANTHROPIC_API_KEY
 """
+
+print("=== STARTING MAIN.PY ===")
 
 import os
 import tempfile
 import uuid
 from typing import Optional
 
+print("=== BASIC IMPORTS DONE ===")
+
 from fastapi import FastAPI, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
+
+print("=== FASTAPI IMPORTED ===")
+
 from supabase import create_client
 
+print("=== SUPABASE IMPORTED ===")
+
 from Intake.voice_intake import process_voice_complaint
+
+print("=== VOICE INTAKE IMPORTED ===")
+
 from Intake.text_intake import process_text_complaint
+
+print("=== TEXT INTAKE IMPORTED ===")
+
 from Intake.image_intake import process_image_complaint
+
+print("=== IMAGE INTAKE IMPORTED ===")
 
 from duplicate import (
     find_duplicate_group,
     create_cluster_id,
     get_people_affected
 )
+
+print("=== DUPLICATE IMPORTED ===")
+
 from severity import calculate_severity
+
+print("=== SEVERITY IMPORTED ===")
+
 from priority import calculate_priority
 
+print("=== PRIORITY IMPORTED ===")
+
+
+# ============================================================
+# FASTAPI APP
+# ============================================================
+
 app = FastAPI()
+
+print("=== FASTAPI APP CREATED ===")
+
+
+# ============================================================
+# CORS
+# ============================================================
 
 app.add_middleware(
     CORSMiddleware,
@@ -43,7 +78,26 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-supabase = create_client(os.environ["SUPABASE_URL"], os.environ["SUPABASE_KEY"])
+print("=== CORS CONFIGURED ===")
+
+
+# ============================================================
+# SUPABASE
+# ============================================================
+
+print("=== INITIALIZING SUPABASE ===")
+
+supabase = create_client(
+    os.environ["SUPABASE_URL"],
+    os.environ["SUPABASE_KEY"]
+)
+
+print("=== SUPABASE INITIALIZED ===")
+
+
+# ============================================================
+# DUPLICATE + SEVERITY + PRIORITY
+# ============================================================
 
 async def assign_duplicate_cluster(
     complaint_id,
@@ -53,7 +107,7 @@ async def assign_duplicate_cluster(
     gps_lat,
     gps_lng,
     created_at,
-    image_url = None
+    image_url=None
 ):
     """
     Finds/creates a duplicate cluster, updates the number
@@ -74,7 +128,6 @@ async def assign_duplicate_cluster(
         gps_lng,
         image_url
     )
-
 
     # --------------------------------------------------------
     # 2. No duplicate → create new cluster
@@ -97,7 +150,6 @@ async def assign_duplicate_cluster(
             .execute()
         )
 
-
     # --------------------------------------------------------
     # 3. Count affected citizens
     # --------------------------------------------------------
@@ -106,7 +158,6 @@ async def assign_duplicate_cluster(
         supabase,
         cluster_id
     )
-
 
     # --------------------------------------------------------
     # 4. Calculate severity
@@ -123,7 +174,6 @@ async def assign_duplicate_cluster(
 
     severity = severity_result["severity"]
 
-
     # --------------------------------------------------------
     # 5. Calculate priority
     # --------------------------------------------------------
@@ -134,10 +184,7 @@ async def assign_duplicate_cluster(
         created_at=created_at
     )
 
-    priority_score = priority_result[
-        "priority_score"
-    ]
-
+    priority_score = priority_result["priority_score"]
 
     # --------------------------------------------------------
     # 6. Update entire cluster
@@ -158,16 +205,38 @@ async def assign_duplicate_cluster(
         .execute()
     )
 
-
     return {
         "cluster_id": cluster_id,
         "people_affected": people_affected,
         "severity": severity,
-        "severity_reason": severity_result[
-            "severity_reason"
-        ],
+        "severity_reason": severity_result["severity_reason"],
         "priority_score": priority_score
     }
+
+
+# ============================================================
+# HEALTH CHECK
+# ============================================================
+
+@app.get("/")
+async def root():
+    return {
+        "status": "ok",
+        "message": "NagarAI backend is running"
+    }
+
+
+@app.get("/health")
+async def health():
+    return {
+        "status": "healthy"
+    }
+
+
+# ============================================================
+# TEXT COMPLAINT
+# ============================================================
+
 @app.post("/complaints/text")
 async def submit_text_complaint(
     text: str = Form(...),
@@ -183,7 +252,6 @@ async def submit_text_complaint(
         text
     )
 
-
     # --------------------------------------------------------
     # INSERT COMPLAINT
     # --------------------------------------------------------
@@ -198,7 +266,6 @@ async def submit_text_complaint(
         "status": "pending",
     }
 
-
     result = (
         supabase
         .table("complaints")
@@ -206,35 +273,25 @@ async def submit_text_complaint(
         .execute()
     )
 
-
     complaint = result.data[0]
-
 
     # --------------------------------------------------------
     # DUPLICATE + SEVERITY + PRIORITY
     # --------------------------------------------------------
 
     cluster_result = await assign_duplicate_cluster(
-
         complaint_id=complaint["id"],
-
         category=complaint["category"],
-
         issue=complaint["category"],
-
         description=complaint["description"],
-
         gps_lat=complaint["gps_lat"],
-
         gps_lng=complaint["gps_lng"],
-
         created_at=complaint["created_at"],
-        image_url = None
+        image_url=None
     )
 
-
     # --------------------------------------------------------
-    # Add calculated values to response
+    # ADD CALCULATED VALUES TO RESPONSE
     # --------------------------------------------------------
 
     complaint["cluster_id"] = (
@@ -257,10 +314,14 @@ async def submit_text_complaint(
         cluster_result["severity_reason"]
     )
 
-
     return {
         "complaint": complaint
     }
+
+
+# ============================================================
+# VOICE COMPLAINT
+# ============================================================
 
 @app.post("/complaints/voice")
 async def submit_voice_complaint(
@@ -280,7 +341,6 @@ async def submit_voice_complaint(
         or ".wav"
     )
 
-
     # --------------------------------------------------------
     # TEMPORARY AUDIO FILE
     # --------------------------------------------------------
@@ -293,7 +353,6 @@ async def submit_voice_complaint(
         tmp.write(audio_bytes)
 
         tmp_path = tmp.name
-
 
     try:
 
@@ -310,11 +369,7 @@ async def submit_voice_complaint(
     finally:
 
         if os.path.exists(tmp_path):
-
-            os.remove(
-                tmp_path
-            )
-
+            os.remove(tmp_path)
 
     # --------------------------------------------------------
     # UPLOAD ORIGINAL AUDIO
@@ -323,7 +378,6 @@ async def submit_voice_complaint(
     storage_path = (
         f"voice/{uuid.uuid4()}{suffix}"
     )
-
 
     (
         supabase
@@ -335,7 +389,6 @@ async def submit_voice_complaint(
         )
     )
 
-
     audio_url = (
         supabase
         .storage
@@ -344,7 +397,6 @@ async def submit_voice_complaint(
             storage_path
         )
     )
-
 
     # --------------------------------------------------------
     # INSERT COMPLAINT
@@ -376,7 +428,6 @@ async def submit_voice_complaint(
         "status": "pending",
     }
 
-
     result = (
         supabase
         .table("complaints")
@@ -384,32 +435,22 @@ async def submit_voice_complaint(
         .execute()
     )
 
-
     complaint = result.data[0]
-
 
     # --------------------------------------------------------
     # DUPLICATE + SEVERITY + PRIORITY
     # --------------------------------------------------------
 
     cluster_result = await assign_duplicate_cluster(
-
         complaint_id=complaint["id"],
-
         category=complaint["category"],
-
         issue=complaint["category"],
-
         description=complaint["description"],
-
         gps_lat=complaint["gps_lat"],
-
         gps_lng=complaint["gps_lng"],
-
         created_at=complaint["created_at"],
-        image_url = None
+        image_url=None
     )
-
 
     # --------------------------------------------------------
     # ADD CALCULATED VALUES TO RESPONSE
@@ -435,10 +476,14 @@ async def submit_voice_complaint(
         cluster_result["severity_reason"]
     )
 
-
     return {
         "complaint": complaint
     }
+
+
+# ============================================================
+# PHOTO COMPLAINT
+# ============================================================
 
 @app.post("/complaints/photo")
 async def submit_photo_complaint(
@@ -458,7 +503,6 @@ async def submit_photo_complaint(
         or ".jpg"
     )
 
-
     # --------------------------------------------------------
     # TEMPORARY IMAGE FILE
     # --------------------------------------------------------
@@ -471,7 +515,6 @@ async def submit_photo_complaint(
         tmp.write(image_bytes)
 
         tmp_path = tmp.name
-
 
     try:
 
@@ -486,11 +529,7 @@ async def submit_photo_complaint(
     finally:
 
         if os.path.exists(tmp_path):
-
-            os.remove(
-                tmp_path
-            )
-
+            os.remove(tmp_path)
 
     # --------------------------------------------------------
     # UPLOAD IMAGE
@@ -499,7 +538,6 @@ async def submit_photo_complaint(
     storage_path = (
         f"photo/{uuid.uuid4()}{suffix}"
     )
-
 
     (
         supabase
@@ -511,7 +549,6 @@ async def submit_photo_complaint(
         )
     )
 
-
     image_url = (
         supabase
         .storage
@@ -520,7 +557,6 @@ async def submit_photo_complaint(
             storage_path
         )
     )
-
 
     # --------------------------------------------------------
     # INSERT COMPLAINT
@@ -546,7 +582,6 @@ async def submit_photo_complaint(
         "status": "pending",
     }
 
-
     result = (
         supabase
         .table("complaints")
@@ -554,32 +589,22 @@ async def submit_photo_complaint(
         .execute()
     )
 
-
     complaint = result.data[0]
-
 
     # --------------------------------------------------------
     # DUPLICATE + SEVERITY + PRIORITY
     # --------------------------------------------------------
 
     cluster_result = await assign_duplicate_cluster(
-
         complaint_id=complaint["id"],
-
         category=complaint["category"],
-
         issue=complaint["category"],
-
         description=complaint["description"],
-
         gps_lat=complaint["gps_lat"],
-
         gps_lng=complaint["gps_lng"],
-
         created_at=complaint["created_at"],
         image_url=complaint["image_url"]
     )
-
 
     # --------------------------------------------------------
     # ADD CALCULATED VALUES TO RESPONSE
@@ -605,7 +630,10 @@ async def submit_photo_complaint(
         cluster_result["severity_reason"]
     )
 
-
     return {
         "complaint": complaint
     }
+
+
+print("=== MAIN.PY FINISHED LOADING ===")
+print("=== APP READY FOR UVICORN ===")
