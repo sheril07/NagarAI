@@ -5,24 +5,28 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
 :root {
-    --primary: #2563eb;
-    --primary-dark: #1d4ed8;
-    --primary-light: #eff6ff;
+    /* Main colors */
+    --primary: #f97316;
+    --primary-dark: #ea580c;
+    --primary-light: #fff7ed;
 
-    --navy: #0f172a;
-    --text: #1e293b;
+    /* Dark green */
+    --navy: #12372a;
+    --text: #1f2937;
     --muted: #64748b;
     --light-muted: #94a3b8;
 
-    --background: #f1f5f9;
+    /* Background */
+    --background: #f3f7f4;
     --surface: #ffffff;
-    --border: #e2e8f0;
+    --border: #d7e2dc;
 
+    /* Status */
     --success: #16a34a;
     --danger: #dc2626;
 
     --radius: 18px;
-    --shadow: 0 10px 30px rgba(15, 23, 42, 0.07);
+    --shadow: 0 10px 30px rgba(18, 55, 42, 0.08);
 }
 
 
