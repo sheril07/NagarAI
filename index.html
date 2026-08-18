@@ -1,174 +1,45 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-    <title>NagarAI - Civic Intake</title>
-
-    <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8">
+  <title>NagarAI Civic Complaint Portal</title>
+  <link rel="stylesheet" href="styles.css">
 </head>
-
 <body>
+  <header>
+    <h1>NagarAI Complaint Submission</h1>
+  </header>
 
-    <div class="container">
+  <main>
+    <!-- Voice Complaint -->
+    <section>
+      <h2>Voice Complaint</h2>
+      <input type="file" id="voiceFile" accept="audio/*">
+      <button onclick="submitVoice()">Submit Voice Complaint</button>
+    </section>
 
-        <!-- =========================
-             HEADER
-             ========================= -->
+    <!-- Text Complaint -->
+    <section>
+      <h2>Text Complaint</h2>
+      <textarea id="textComplaint" placeholder="Describe your complaint..."></textarea>
+      <button onclick="submitText()">Submit Text Complaint</button>
+    </section>
 
-        <h1>NagarAI Civic Intake</h1>
+    <!-- Image Complaint -->
+    <section>
+      <h2>Image Complaint</h2>
+      <input type="file" id="imageFile" accept="image/*">
+      <input type="text" id="imageCaption" placeholder="Enter caption/description">
+      <button onclick="submitImage()">Submit Image Complaint</button>
+    </section>
 
+    <div id="response"></div>
+  </main>
 
-        <!-- =========================
-             GPS STATUS
-             ========================= -->
+  <footer>
+    <p>&copy; 2026 NagarAI</p>
+  </footer>
 
-        <div id="gpsBadge" class="gps-badge">
-            📍 GPS Status:
-            <span id="gpsText">Checking location...</span>
-        </div>
-
-
-        <!-- =========================
-             1. VOICE COMPLAINT
-             ========================= -->
-
-        <div class="card">
-
-            <h2>1. Voice Complaint</h2>
-
-            <!-- Record using microphone -->
-
-            <div class="voice-controls">
-
-                <button
-                    type="button"
-                    id="startRec"
-                >
-                    🎤 Start Recording
-                </button>
-
-                <button
-                    type="button"
-                    id="stopRec"
-                    disabled
-                >
-                    ⏹️ Stop & Submit
-                </button>
-
-            </div>
-
-
-            <p id="recStatus">
-                Click Start to record your complaint...
-            </p>
-
-
-            <hr class="divider">
-
-
-            <!-- Upload existing audio -->
-
-            <form id="voiceForm">
-
-                <label for="audioFile">
-                    Or upload an audio file:
-                </label>
-
-                <input
-                    type="file"
-                    id="audioFile"
-                    accept="audio/*"
-                >
-
-                <button type="submit">
-                    Upload Voice File
-                </button>
-
-            </form>
-
-        </div>
-
-
-
-        <!-- =========================
-             2. TEXT COMPLAINT
-             ========================= -->
-
-        <div class="card">
-
-            <h2>2. Text Complaint</h2>
-
-            <form id="textForm">
-
-                <textarea
-                    id="textInput"
-                    placeholder="Describe the issue (e.g., street light broken in front of P2)..."
-                    required
-                ></textarea>
-
-                <button type="submit">
-                    Submit Text Complaint
-                </button>
-
-            </form>
-
-        </div>
-
-
-
-        <!-- =========================
-             3. IMAGE COMPLAINT
-             ========================= -->
-
-        <div class="card">
-
-            <h2>3. Image Complaint</h2>
-
-            <form id="imageForm">
-
-                <input
-                    type="file"
-                    id="imageFile"
-                    accept="image/*"
-                    required
-                >
-
-                <textarea
-                    id="imageCaption"
-                    placeholder="Add optional details about the photo..."
-                ></textarea>
-
-                <button type="submit">
-                    Submit Image Complaint
-                </button>
-
-            </form>
-
-        </div>
-
-
-
-        <!-- =========================
-             SUBMISSION STATUS
-             ========================= -->
-
-        <div
-            id="status"
-            class="status-box"
-        >
-            Ready to receive complaints.
-        </div>
-
-    </div>
-
-
-    <!-- =========================
-         JAVASCRIPT
-         ========================= -->
-
-    <script src="script.js"></script>
-
+  <script src="script.js"></script>
 </body>
 </html>
