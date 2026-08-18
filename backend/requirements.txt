@@ -6,6 +6,7 @@ pydub
 google-genai
 groq
 anthropic
+pyaudioop
 fastapi
 uvicorn
 python-multipart
