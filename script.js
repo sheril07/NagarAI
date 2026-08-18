@@ -120,16 +120,18 @@ startBtn.addEventListener("click", async () => {
 
 stopBtn.addEventListener("click", () => {
 
-    mediaRecorder.stop();
-
-    recStatus.innerText =
-        "⏳ Processing audio & getting location...";
-
-
+    // Attach onstop BEFORE calling stop() to avoid a race condition
+    // where the 'stop' event could fire before the handler exists.
     mediaRecorder.onstop = async () => {
 
         startBtn.disabled = false;
         stopBtn.disabled = true;
+
+        // Release the microphone so the browser's "mic in use"
+        // indicator turns off once we're done recording.
+        mediaRecorder.stream
+            .getTracks()
+            .forEach((track) => track.stop());
 
 
         const audioBlob =
@@ -228,6 +230,11 @@ stopBtn.addEventListener("click", () => {
                 "Recording failed. Try again.";
         }
     };
+
+    mediaRecorder.stop();
+
+    recStatus.innerText =
+        "⏳ Processing audio & getting location...";
 });
 
 
