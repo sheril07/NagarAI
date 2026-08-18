@@ -179,7 +179,7 @@ def image_similarity(
 ):
 
     if not image_path1 or not image_path2:
-        return 0.0
+        return None
 
     embedding1 = get_image_embedding(
         image_path1
@@ -190,7 +190,7 @@ def image_similarity(
     )
 
     if embedding1 is None or embedding2 is None:
-        return 0.0
+        return None
 
     score = cosine_similarity(
         [embedding1],
@@ -228,15 +228,67 @@ def calculate_duplicate_score(
     category_score
 ):
 
-    score = (
-        LOCATION_WEIGHT * location_score
-        +
-        TEXT_WEIGHT * text_score
-        +
-        IMAGE_WEIGHT * image_score
-        +
-        CATEGORY_WEIGHT * category_score
+    # Base weights
+    weights = {
+        "location": 0.40,
+        "text": 0.25,
+        "image": 0.25,
+        "category": 0.10
+    }
+
+    scores = {
+        "location": location_score,
+        "text": text_score,
+        "image": image_score,
+        "category": category_score
+    }
+
+    # --------------------------------------------------------
+    # Ignore unavailable modalities
+    # --------------------------------------------------------
+
+    available = []
+
+    if location_score is not None:
+        available.append("location")
+
+    if text_score is not None:
+        available.append("text")
+
+    if image_score is not None:
+        available.append("image")
+
+    if category_score is not None:
+        available.append("category")
+
+
+    if not available:
+        return 0.0
+
+
+    # --------------------------------------------------------
+    # Redistribute weights
+    # --------------------------------------------------------
+
+    total_weight = sum(
+        weights[key]
+        for key in available
     )
+
+
+    score = 0.0
+
+    for key in available:
+
+        normalized_weight = (
+            weights[key] / total_weight
+        )
+
+        score += (
+            normalized_weight
+            * scores[key]
+        )
+
 
     return round(
         score,
@@ -551,95 +603,3 @@ def get_people_affected(
 
         return 1
 
-# ============================================================
-# 7. LOCAL TESTING
-# ============================================================
-
-if __name__ == "__main__":
-
-    # Example coordinates
-    lat1 = 12.9716
-    lng1 = 77.5946
-
-    lat2 = 12.9717
-    lng2 = 77.5947
-
-
-    distance = calculate_distance(
-        lat1,
-        lng1,
-        lat2,
-        lng2
-    )
-
-
-    print(
-        "\nGPS DISTANCE TEST"
-    )
-
-    print(
-        "Distance:",
-        round(distance, 2),
-        "metres"
-    )
-
-
-    location_score = location_similarity(
-        distance
-    )
-
-
-    print(
-        "Location similarity:",
-        round(location_score, 3)
-    )
-
-
-    text_score = text_similarity(
-        "Large pothole on the road",
-        "There is a large pothole on the road"
-    )
-
-
-    print(
-        "Text similarity:",
-        round(text_score, 3)
-    )
-
-
-    category_score = category_similarity(
-        "road and transportation issue",
-        "road and transportation issue"
-    )
-
-
-    print(
-        "Category similarity:",
-        round(category_score, 3)
-    )
-
-
-    duplicate_score = calculate_duplicate_score(
-        location_score,
-        text_score,
-        category_score
-    )
-
-
-    print(
-        "Duplicate score:",
-        duplicate_score
-    )
-
-
-    if duplicate_score >= DUPLICATE_THRESHOLD:
-
-        print(
-            "RESULT: POSSIBLE DUPLICATE"
-        )
-
-    else:
-
-        print(
-            "RESULT: DIFFERENT ISSUE"
-        )
