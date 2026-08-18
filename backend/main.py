@@ -72,7 +72,7 @@ print("=== FASTAPI APP CREATED ===")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["https://sheril07.github.io"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
