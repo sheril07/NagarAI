@@ -134,21 +134,25 @@ async def assign_duplicate_cluster(
     # --------------------------------------------------------
 
     if cluster_id is None:
-
         cluster_id = create_cluster_id()
 
-        (
-            supabase
-            .table("complaints")
-            .update({
-                "cluster_id": cluster_id
-            })
-            .eq(
-                "id",
-                complaint_id
-            )
-            .execute()
+    # Always tag this complaint with its cluster id, whether it's a
+    # brand-new cluster or a match against an existing one. Without
+    # this, complaints matched to an existing cluster never get
+    # written to the DB with a cluster_id, which breaks
+    # get_people_affected() and the "update entire cluster" step below.
+    (
+        supabase
+        .table("complaints")
+        .update({
+            "cluster_id": cluster_id
+        })
+        .eq(
+            "id",
+            complaint_id
         )
+        .execute()
+    )
 
     # --------------------------------------------------------
     # 3. Count affected citizens
