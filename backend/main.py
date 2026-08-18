@@ -52,7 +52,8 @@ async def assign_duplicate_cluster(
     description,
     gps_lat,
     gps_lng,
-    created_at
+    created_at,
+    image_url = None
 ):
     """
     Finds/creates a duplicate cluster, updates the number
@@ -70,7 +71,8 @@ async def assign_duplicate_cluster(
         category,
         description,
         gps_lat,
-        gps_lng
+        gps_lng,
+        image_url
     )
 
 
@@ -226,7 +228,8 @@ async def submit_text_complaint(
 
         gps_lng=complaint["gps_lng"],
 
-        created_at=complaint["created_at"]
+        created_at=complaint["created_at"],
+        image_url = None
     )
 
 
@@ -403,7 +406,8 @@ async def submit_voice_complaint(
 
         gps_lng=complaint["gps_lng"],
 
-        created_at=complaint["created_at"]
+        created_at=complaint["created_at"],
+        image_url = None
     )
 
 
@@ -572,7 +576,8 @@ async def submit_photo_complaint(
 
         gps_lng=complaint["gps_lng"],
 
-        created_at=complaint["created_at"]
+        created_at=complaint["created_at"],
+        image_url=complaint["image_url"]
     )
 
 
