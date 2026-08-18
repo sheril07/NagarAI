@@ -1,32 +1,33 @@
 /* =========================================================
-   NagarAI — Modern Civic Intake UI
+   NagarAI — Purple / Orange Glassmorphism UI
    ========================================================= */
 
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
 :root {
-    /* Main colors */
-    --primary: #f97316;
-    --primary-dark: #ea580c;
-    --primary-light: #fff7ed;
+    /* Main accent */
+    --primary: #ff7a8f;
+    --primary-dark: #e85b76;
+    --primary-light: rgba(255, 122, 143, 0.15);
 
-    /* Dark green */
-    --navy: #12372a;
-    --text: #1f2937;
-    --muted: #64748b;
-    --light-muted: #94a3b8;
+    /* Text */
+    --navy: #ffffff;
+    --text: #ffffff;
+    --muted: rgba(255, 255, 255, 0.75);
+    --light-muted: rgba(255, 255, 255, 0.55);
 
     /* Background */
-    --background: #f3f7f4;
-    --surface: #ffffff;
-    --border: #d7e2dc;
+    --background: #321844;
+    --surface: rgba(255, 255, 255, 0.08);
+    --border: rgba(255, 255, 255, 0.18);
 
     /* Status */
-    --success: #16a34a;
-    --danger: #dc2626;
+    --success: #4ade80;
+    --danger: #fb7185;
 
-    --radius: 18px;
-    --shadow: 0 10px 30px rgba(18, 55, 42, 0.08);
+    /* Design */
+    --radius: 20px;
+    --shadow: 0 15px 45px rgba(0, 0, 0, 0.18);
 }
 
 
@@ -52,13 +53,30 @@ body {
 
     background:
         radial-gradient(
-            circle at top left,
-            rgba(37, 99, 235, 0.08),
+            circle at 10% 15%,
+            rgba(255, 126, 62, 0.42),
+            transparent 32%
+        ),
+        radial-gradient(
+            circle at 85% 10%,
+            rgba(142, 72, 255, 0.45),
             transparent 35%
         ),
-        var(--background);
+        radial-gradient(
+            circle at 50% 75%,
+            rgba(211, 67, 176, 0.35),
+            transparent 40%
+        ),
+        linear-gradient(
+            135deg,
+            #3b173b 0%,
+            #54235f 45%,
+            #24154d 100%
+        );
 
-    color: var(--text);
+    background-attachment: fixed;
+
+    color: #ffffff;
 
     padding: 45px 20px;
 }
@@ -114,7 +132,7 @@ h1::before {
     vertical-align: middle;
 
     box-shadow:
-        0 6px 20px rgba(37, 99, 235, 0.12);
+        0 6px 20px rgba(168, 85, 247, 0.20);
 }
 
 h1::after {
@@ -140,28 +158,22 @@ h1::after {
    ========================================================= */
 
 .gps-badge {
-    position: relative;
+    display: inline-flex;
 
-    display: flex;
     align-items: center;
 
-    margin: 30px 0;
+    background: rgba(255, 255, 255, 0.08);
 
-    padding: 16px 20px;
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
 
-    background: rgba(255, 255, 255, 0.85);
+    border: 1px solid rgba(255, 255, 255, 0.18);
 
-    backdrop-filter: blur(10px);
+    color: rgba(255, 255, 255, 0.75);
 
-    border: 1px solid var(--border);
+    padding: 10px 14px;
 
-    border-radius: 14px;
-
-    color: var(--muted);
-
-    font-size: 0.9rem;
-
-    box-shadow: 0 5px 20px rgba(15, 23, 42, 0.05);
+    border-radius: 12px;
 }
 
 .gps-badge::before {
@@ -177,7 +189,7 @@ h1::after {
     margin-right: 10px;
 
     box-shadow:
-        0 0 0 4px rgba(22, 163, 74, 0.12);
+        0 0 0 4px rgba(74, 222, 128, 0.12);
 }
 
 .gps-badge span {
@@ -196,17 +208,20 @@ h1::after {
 .card {
     position: relative;
 
-    background: var(--surface);
+    background: rgba(255, 255, 255, 0.08);
 
     padding: 30px;
 
     margin-bottom: 22px;
 
-    border: 1px solid var(--border);
+    border: 1px solid rgba(255, 255, 255, 0.18);
 
     border-radius: var(--radius);
 
     box-shadow: var(--shadow);
+
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
 
     overflow: hidden;
 
@@ -217,7 +232,9 @@ h1::after {
 }
 
 
-/* Decorative accent */
+/* =========================================================
+   DECORATIVE CARD ACCENT
+   ========================================================= */
 
 .card::before {
     content: "";
@@ -232,19 +249,24 @@ h1::after {
 
     background: linear-gradient(
         90deg,
-        var(--primary),
-        #60a5fa
+        #ff7a8f,
+        #a855f7,
+        #ff9a5c
     );
 }
 
 
+/* =========================================================
+   CARD HOVER
+   ========================================================= */
+
 .card:hover {
     transform: translateY(-4px);
 
-    border-color: #bfdbfe;
+    border-color: rgba(255, 255, 255, 0.35);
 
     box-shadow:
-        0 16px 40px rgba(15, 23, 42, 0.09);
+        0 20px 55px rgba(0, 0, 0, 0.25);
 }
 
 
@@ -254,6 +276,7 @@ h1::after {
 
 .card h2 {
     display: flex;
+
     align-items: center;
 
     font-size: 1.25rem;
@@ -266,7 +289,9 @@ h1::after {
 }
 
 
-/* Add visual icons to each section */
+/* =========================================================
+   CARD ICONS
+   ========================================================= */
 
 .card:nth-of-type(2) h2::before {
     content: "🎤";
@@ -329,8 +354,8 @@ button {
 
     background: linear-gradient(
         135deg,
-        var(--primary),
-        #3b82f6
+        #ff6f91,
+        #a855f7
     );
 
     color: white;
@@ -339,7 +364,7 @@ button {
 
     padding: 13px 20px;
 
-    border-radius: 10px;
+    border-radius: 12px;
 
     font-family: inherit;
 
@@ -350,7 +375,7 @@ button {
     cursor: pointer;
 
     box-shadow:
-        0 5px 12px rgba(37, 99, 235, 0.18);
+        0 8px 25px rgba(168, 85, 247, 0.25);
 
     transition:
         transform 0.2s ease,
@@ -361,27 +386,27 @@ button {
 button:hover {
     background: linear-gradient(
         135deg,
-        var(--primary-dark),
-        var(--primary)
+        #ff8aa5,
+        #b66cff
     );
 
     transform: translateY(-2px);
 
     box-shadow:
-        0 8px 18px rgba(37, 99, 235, 0.25);
+        0 12px 30px rgba(168, 85, 247, 0.35);
 }
 
 button:active {
     transform: translateY(0);
 
     box-shadow:
-        0 3px 8px rgba(37, 99, 235, 0.18);
+        0 3px 8px rgba(168, 85, 247, 0.18);
 }
 
 button:disabled {
-    background: #cbd5e1;
+    background: rgba(255, 255, 255, 0.15);
 
-    color: #64748b;
+    color: rgba(255, 255, 255, 0.45);
 
     cursor: not-allowed;
 
@@ -397,23 +422,27 @@ button:disabled {
 
 #recStatus {
     display: flex;
+
     align-items: center;
 
     min-height: 38px;
 
     padding: 10px 13px;
 
-    background: #f8fafc;
+    background: rgba(255, 255, 255, 0.08);
 
     border-radius: 9px;
 
-    border: 1px solid #edf2f7;
+    border: 1px solid rgba(255, 255, 255, 0.15);
 
     color: var(--muted);
 
     font-size: 0.85rem;
 
     line-height: 1.4;
+
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
 }
 
 
@@ -443,7 +472,7 @@ label {
 
     font-weight: 600;
 
-    color: #475569;
+    color: rgba(255, 255, 255, 0.8);
 }
 
 
@@ -462,13 +491,13 @@ textarea {
 
     margin-bottom: 13px;
 
-    border: 1px solid #cbd5e1;
+    border: 1px solid rgba(255, 255, 255, 0.2);
 
     border-radius: 11px;
 
-    background: #f8fafc;
+    background: rgba(255, 255, 255, 0.08);
 
-    color: var(--text);
+    color: white;
 
     font-family: inherit;
 
@@ -482,19 +511,22 @@ textarea {
         border-color 0.2s ease,
         box-shadow 0.2s ease,
         background 0.2s ease;
+
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
 }
 
 textarea:hover {
-    border-color: #94a3b8;
+    border-color: rgba(255, 255, 255, 0.35);
 }
 
 textarea:focus {
     border-color: var(--primary);
 
-    background: white;
+    background: rgba(255, 255, 255, 0.12);
 
     box-shadow:
-        0 0 0 4px rgba(37, 99, 235, 0.1);
+        0 0 0 4px rgba(255, 122, 143, 0.15);
 }
 
 textarea::placeholder {
@@ -513,11 +545,11 @@ input[type="file"] {
 
     margin-bottom: 13px;
 
-    border: 2px dashed #cbd5e1;
+    border: 2px dashed rgba(255, 255, 255, 0.25);
 
     border-radius: 12px;
 
-    background: #f8fafc;
+    background: rgba(255, 255, 255, 0.06);
 
     color: var(--muted);
 
@@ -550,7 +582,7 @@ input[type="file"]:hover {
 
     padding: 20px 22px;
 
-    background: white;
+    background: rgba(255, 255, 255, 0.08);
 
     border: 1px solid var(--border);
 
@@ -565,11 +597,16 @@ input[type="file"]:hover {
     font-size: 0.85rem;
 
     box-shadow:
-        0 5px 20px rgba(15, 23, 42, 0.05);
+        0 5px 20px rgba(0, 0, 0, 0.12);
+
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
 }
 
 
-/* Status indicator */
+/* =========================================================
+   STATUS INDICATOR
+   ========================================================= */
 
 .status-box::before {
     content: "●";
@@ -598,7 +635,7 @@ form {
 button:focus-visible,
 textarea:focus-visible,
 input:focus-visible {
-    outline: 3px solid rgba(37, 99, 235, 0.25);
+    outline: 3px solid rgba(255, 122, 143, 0.35);
 
     outline-offset: 2px;
 }
@@ -687,10 +724,5 @@ input:focus-visible {
 
     h1::before {
         display: none;
-    }
-}
-
-    button {
-        width: 100%;
     }
 }
