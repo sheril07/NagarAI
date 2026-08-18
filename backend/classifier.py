@@ -6,7 +6,7 @@ from categories import CATEGORIES
 
 
 api_key = os.getenv("GEMINI_API_KEY")
-
+print("GEMINI_API_KEY exists:", bool(api_key))
 if not api_key:
     raise ValueError("GEMINI_API_KEY environment variable is not set.")
 
