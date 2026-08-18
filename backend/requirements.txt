@@ -2,7 +2,7 @@ openai-whisper
 webrtcvad
 scipy
 numpy
-pydub==0.25.1
+pydub
 google-genai
 groq
 anthropic
