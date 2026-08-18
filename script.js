@@ -1,4 +1,4 @@
-const API_BASE_URL = "https://nagarai-backend.onrender.com";
+const API_BASE_URL = "https://nagarai-webpage.onrender.com";
 
 let mediaRecorder;
 let audioChunks = [];
