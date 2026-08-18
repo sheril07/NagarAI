@@ -72,7 +72,9 @@ print("=== FASTAPI APP CREATED ===")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://sheril07.github.io"],
+    allow_origins=[
+        "https://sheril07.github.io"
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -136,11 +138,7 @@ async def assign_duplicate_cluster(
     if cluster_id is None:
         cluster_id = create_cluster_id()
 
-    # Always tag this complaint with its cluster id, whether it's a
-    # brand-new cluster or a match against an existing one. Without
-    # this, complaints matched to an existing cluster never get
-    # written to the DB with a cluster_id, which breaks
-    # get_people_affected() and the "update entire cluster" step below.
+    # Tag this complaint with its cluster ID
     (
         supabase
         .table("complaints")
@@ -252,9 +250,7 @@ async def submit_text_complaint(
     # TEXT INTAKE
     # --------------------------------------------------------
 
-    fields = process_text_complaint(
-        text
-    )
+    fields = process_text_complaint(text)
 
     # --------------------------------------------------------
     # INSERT COMPLAINT
@@ -298,25 +294,11 @@ async def submit_text_complaint(
     # ADD CALCULATED VALUES TO RESPONSE
     # --------------------------------------------------------
 
-    complaint["cluster_id"] = (
-        cluster_result["cluster_id"]
-    )
-
-    complaint["people_affected"] = (
-        cluster_result["people_affected"]
-    )
-
-    complaint["severity"] = (
-        cluster_result["severity"]
-    )
-
-    complaint["priority_score"] = (
-        cluster_result["priority_score"]
-    )
-
-    complaint["severity_reason"] = (
-        cluster_result["severity_reason"]
-    )
+    complaint["cluster_id"] = cluster_result["cluster_id"]
+    complaint["people_affected"] = cluster_result["people_affected"]
+    complaint["severity"] = cluster_result["severity"]
+    complaint["priority_score"] = cluster_result["priority_score"]
+    complaint["severity_reason"] = cluster_result["severity_reason"]
 
     return {
         "complaint": complaint
@@ -355,7 +337,6 @@ async def submit_voice_complaint(
     ) as tmp:
 
         tmp.write(audio_bytes)
-
         tmp_path = tmp.name
 
     try:
@@ -379,9 +360,7 @@ async def submit_voice_complaint(
     # UPLOAD ORIGINAL AUDIO
     # --------------------------------------------------------
 
-    storage_path = (
-        f"voice/{uuid.uuid4()}{suffix}"
-    )
+    storage_path = f"voice/{uuid.uuid4()}{suffix}"
 
     (
         supabase
@@ -408,27 +387,13 @@ async def submit_voice_complaint(
 
     row = {
         "source_modality": "voice",
-
         "category": fields["category"],
-
-        "location_mention": fields[
-            "location_mention"
-        ],
-
-        "description": fields[
-            "description"
-        ],
-
-        "raw_transcript": fields.get(
-            "raw_transcript"
-        ),
-
+        "location_mention": fields["location_mention"],
+        "description": fields["description"],
+        "raw_transcript": fields.get("raw_transcript"),
         "gps_lat": gps_lat,
-
         "gps_lng": gps_lng,
-
         "audio_url": audio_url,
-
         "status": "pending",
     }
 
@@ -460,25 +425,11 @@ async def submit_voice_complaint(
     # ADD CALCULATED VALUES TO RESPONSE
     # --------------------------------------------------------
 
-    complaint["cluster_id"] = (
-        cluster_result["cluster_id"]
-    )
-
-    complaint["people_affected"] = (
-        cluster_result["people_affected"]
-    )
-
-    complaint["severity"] = (
-        cluster_result["severity"]
-    )
-
-    complaint["priority_score"] = (
-        cluster_result["priority_score"]
-    )
-
-    complaint["severity_reason"] = (
-        cluster_result["severity_reason"]
-    )
+    complaint["cluster_id"] = cluster_result["cluster_id"]
+    complaint["people_affected"] = cluster_result["people_affected"]
+    complaint["severity"] = cluster_result["severity"]
+    complaint["priority_score"] = cluster_result["priority_score"]
+    complaint["severity_reason"] = cluster_result["severity_reason"]
 
     return {
         "complaint": complaint
@@ -517,7 +468,6 @@ async def submit_photo_complaint(
     ) as tmp:
 
         tmp.write(image_bytes)
-
         tmp_path = tmp.name
 
     try:
@@ -526,9 +476,7 @@ async def submit_photo_complaint(
         # PHOTO INTAKE
         # ----------------------------------------------------
 
-        fields = process_image_complaint(
-            tmp_path
-        )
+        fields = process_image_complaint(tmp_path)
 
     finally:
 
@@ -539,9 +487,7 @@ async def submit_photo_complaint(
     # UPLOAD IMAGE
     # --------------------------------------------------------
 
-    storage_path = (
-        f"photo/{uuid.uuid4()}{suffix}"
-    )
+    storage_path = f"photo/{uuid.uuid4()}{suffix}"
 
     (
         supabase
@@ -568,21 +514,11 @@ async def submit_photo_complaint(
 
     row = {
         "source_modality": "photo",
-
-        "category": fields[
-            "category"
-        ],
-
-        "description": fields[
-            "description"
-        ],
-
+        "category": fields["category"],
+        "description": fields["description"],
         "gps_lat": gps_lat,
-
         "gps_lng": gps_lng,
-
         "image_url": image_url,
-
         "status": "pending",
     }
 
@@ -614,25 +550,11 @@ async def submit_photo_complaint(
     # ADD CALCULATED VALUES TO RESPONSE
     # --------------------------------------------------------
 
-    complaint["cluster_id"] = (
-        cluster_result["cluster_id"]
-    )
-
-    complaint["people_affected"] = (
-        cluster_result["people_affected"]
-    )
-
-    complaint["severity"] = (
-        cluster_result["severity"]
-    )
-
-    complaint["priority_score"] = (
-        cluster_result["priority_score"]
-    )
-
-    complaint["severity_reason"] = (
-        cluster_result["severity_reason"]
-    )
+    complaint["cluster_id"] = cluster_result["cluster_id"]
+    complaint["people_affected"] = cluster_result["people_affected"]
+    complaint["severity"] = cluster_result["severity"]
+    complaint["priority_score"] = cluster_result["priority_score"]
+    complaint["severity_reason"] = cluster_result["severity_reason"]
 
     return {
         "complaint": complaint
