@@ -24,7 +24,12 @@ from supabase import create_client
 from Intake.voice_intake import process_voice_complaint
 from Intake.text_intake import process_text_complaint
 from Intake.image_intake import process_image_complaint
-from duplicate import find_duplicate_group
+
+from duplicate import (
+    find_duplicate_group,
+    create_cluster_id,
+    get_people_affected
+)
 
 app = FastAPI()
 
@@ -38,77 +43,133 @@ app.add_middleware(
 
 supabase = create_client(os.environ["SUPABASE_URL"], os.environ["SUPABASE_KEY"])
 
-def create_issue_group(
+async def assign_duplicate_cluster(
+    complaint_id,
     category,
     description,
     gps_lat,
     gps_lng
 ):
-    response = (
+    """
+    Finds an existing duplicate cluster.
+
+    If no duplicate exists:
+        creates a new cluster.
+
+    Then updates people_affected
+    for all complaints in that cluster.
+    """
+
+    # --------------------------------------------------------
+    # Find an existing duplicate
+    # --------------------------------------------------------
+
+    cluster_id = find_duplicate_group(
+        supabase,
+        complaint_id,
+        category,
+        description,
+        gps_lat,
+        gps_lng
+    )
+
+
+    # --------------------------------------------------------
+    # No duplicate → create new cluster
+    # --------------------------------------------------------
+
+    if cluster_id is None:
+
+        cluster_id = create_cluster_id()
+
+        (
+            supabase
+            .table("complaints")
+            .update({
+                "cluster_id": cluster_id
+            })
+            .eq(
+                "id",
+                complaint_id
+            )
+            .execute()
+        )
+
+
+    # --------------------------------------------------------
+    # Count complaints in cluster
+    # --------------------------------------------------------
+
+    people_affected = get_people_affected(
+        supabase,
+        cluster_id
+    )
+
+
+    # --------------------------------------------------------
+    # Update affected count for entire cluster
+    # --------------------------------------------------------
+
+    (
         supabase
-        .table("issue_groups")
-        .insert({
-            "category": category,
-            "description": description,
-            "gps_lat": gps_lat,
-            "gps_lng": gps_lng,
-            "complaint_count": 1
+        .table("complaints")
+        .update({
+            "people_affected": people_affected
         })
+        .eq(
+            "cluster_id",
+            cluster_id
+        )
         .execute()
     )
 
-    if not response.data:
-        return None
 
-    return response.data[0]["id"]
-
-
-def get_issue_group(
-    category,
-    description,
-    gps_lat,
-    gps_lng
-):
-    issue_group_id = find_duplicate_group(
-        supabase,
-        category,
-        description,
-        gps_lat,
-        gps_lng
-    )
-    if issue_group_id:
-        return issue_group_id
-    return create_issue_group(
-        category,
-        description,
-        gps_lat,
-        gps_lng
-    )
-
+    return cluster_id, people_affected
 
 @app.post("/complaints/text")
 async def submit_text_complaint(
     text: str = Form(...),
+    gps_lat: Optional[float] = Form(None),
+    gps_lng: Optional[float] = Form(None),
 ):
+
     fields = process_text_complaint(text)
 
-    issue_group_id = get_issue_group(fields["category"], fields["description"], gps_lat, gps_lng)
-
     row = {
-    "source_modality": "text",
-    "category": fields["category"],
-    "location_mention": fields["location_mention"],
-    "description": fields["description"],
-    "gps_lat": gps_lat,
-    "gps_lng": gps_lng,
-    "issue_group_id": issue_group_id,
-    "status": "pending",
+        "source_modality": "text",
+        "category": fields["category"],
+        "location_mention": fields["location_mention"],
+        "description": fields["description"],
+        "gps_lat": gps_lat,
+        "gps_lng": gps_lng,
+        "status": "pending",
     }
 
-    result = supabase.table("complaints").insert(row).execute()
+    result = (
+        supabase
+        .table("complaints")
+        .insert(row)
+        .execute()
+    )
 
-    return {"complaint": result.data[0]}
+    complaint = result.data[0]
 
+    cluster_id, people_affected = (
+        await assign_duplicate_cluster(
+            complaint_id=complaint["id"],
+            category=complaint["category"],
+            description=complaint["description"],
+            gps_lat=complaint["gps_lat"],
+            gps_lng=complaint["gps_lng"],
+        )
+    )
+
+    complaint["cluster_id"] = cluster_id
+    complaint["people_affected"] = people_affected
+
+    return {
+        "complaint": complaint
+    }
 
 @app.post("/complaints/voice")
 async def submit_voice_complaint(
@@ -116,38 +177,122 @@ async def submit_voice_complaint(
     gps_lat: Optional[float] = Form(None),
     gps_lng: Optional[float] = Form(None),
 ):
-    audio_bytes = await audio.read()
-    suffix = os.path.splitext(audio.filename)[1] or ".wav"
 
-    # process_voice_complaint() works on a file path, not an in-memory blob
-    with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
+    audio_bytes = await audio.read()
+
+    suffix = (
+        os.path.splitext(audio.filename)[1]
+        or ".wav"
+    )
+
+
+    # --------------------------------------------------------
+    # Temporary audio file
+    # --------------------------------------------------------
+
+    with tempfile.NamedTemporaryFile(
+        delete=False,
+        suffix=suffix
+    ) as tmp:
+
         tmp.write(audio_bytes)
         tmp_path = tmp.name
 
-    try:
-        fields = process_voice_complaint(tmp_path) # {category, location_mention, description, raw_transcript, ...}
-        issue_group_id = get_issue_group(fields["category"], fields["description"], gps_lat, gps_lng)
-    finally:
-        os.remove(tmp_path)
 
-    # store the original audio in Supabase Storage for the record
-    storage_path = f"voice/{uuid.uuid4()}{suffix}"
-    supabase.storage.from_("complaint-audio").upload(storage_path, audio_bytes)
-    audio_url = supabase.storage.from_("complaint-audio").get_public_url(storage_path)
+    try:
+
+        fields = process_voice_complaint(
+            tmp_path,
+            latitude=gps_lat,
+            longitude=gps_lng
+        )
+
+    finally:
+
+        if os.path.exists(tmp_path):
+            os.remove(tmp_path)
+
+
+    # --------------------------------------------------------
+    # Store audio
+    # --------------------------------------------------------
+
+    storage_path = (
+        f"voice/{uuid.uuid4()}{suffix}"
+    )
+
+    (
+        supabase
+        .storage
+        .from_("complaint-audio")
+        .upload(
+            storage_path,
+            audio_bytes
+        )
+    )
+
+    audio_url = (
+        supabase
+        .storage
+        .from_("complaint-audio")
+        .get_public_url(
+            storage_path
+        )
+    )
+
+
+    # --------------------------------------------------------
+    # Insert complaint
+    # --------------------------------------------------------
 
     row = {
         "source_modality": "voice",
         "category": fields["category"],
         "location_mention": fields["location_mention"],
         "description": fields["description"],
+        "raw_transcript": fields.get(
+            "raw_transcript"
+        ),
         "gps_lat": gps_lat,
         "gps_lng": gps_lng,
         "audio_url": audio_url,
-        "issue_group_id" = issue_group_id,
         "status": "pending",
     }
-    result = supabase.table("complaints").insert(row).execute()
-    return {"complaint": result.data[0]}
+
+
+    result = (
+        supabase
+        .table("complaints")
+        .insert(row)
+        .execute()
+    )
+
+
+    complaint = result.data[0]
+
+
+    # --------------------------------------------------------
+    # Deduplication
+    # --------------------------------------------------------
+
+    cluster_id, people_affected = (
+        await assign_duplicate_cluster(
+            complaint_id=complaint["id"],
+            category=complaint["category"],
+            description=complaint["description"],
+            gps_lat=complaint["gps_lat"],
+            gps_lng=complaint["gps_lng"],
+        )
+    )
+
+
+    complaint["cluster_id"] = cluster_id
+    complaint["people_affected"] = people_affected
+
+
+    return {
+        "complaint": complaint
+    }
 
 @app.post("/complaints/photo")
 async def submit_photo_complaint(
@@ -155,8 +300,19 @@ async def submit_photo_complaint(
     gps_lat: Optional[float] = Form(None),
     gps_lng: Optional[float] = Form(None),
 ):
+
     image_bytes = await image.read()
-    suffix = os.path.splitext(image.filename)[1] or ".jpg"
+
+    suffix = (
+        os.path.splitext(image.filename)[1]
+        or ".jpg"
+    )
+
+
+    # --------------------------------------------------------
+    # Temporary image file
+    # --------------------------------------------------------
+
     with tempfile.NamedTemporaryFile(
         delete=False,
         suffix=suffix
@@ -165,37 +321,92 @@ async def submit_photo_complaint(
         tmp.write(image_bytes)
         tmp_path = tmp.name
 
+
     try:
-        fields = process_image_complaint(tmp_path)
-        issue_group_id = get_issue_group(fields["category"], fields["description"], gps_lat, gps_lng)
+
+        fields = process_image_complaint(
+            tmp_path
+        )
 
     finally:
-        os.remove(tmp_path)
-    storage_path = f"photo/{uuid.uuid4()}{suffix}"
-    supabase.storage \
-        .from_("complaint-images") \
+
+        if os.path.exists(tmp_path):
+            os.remove(tmp_path)
+
+
+    # --------------------------------------------------------
+    # Store image
+    # --------------------------------------------------------
+
+    storage_path = (
+        f"photo/{uuid.uuid4()}{suffix}"
+    )
+
+    (
+        supabase
+        .storage
+        .from_("complaint-images")
         .upload(
             storage_path,
             image_bytes
         )
-    image_url = supabase.storage \
-        .from_("complaint-images") \
-        .get_public_url(storage_path)
+    )
+
+    image_url = (
+        supabase
+        .storage
+        .from_("complaint-images")
+        .get_public_url(
+            storage_path
+        )
+    )
+
+
+    # --------------------------------------------------------
+    # Insert complaint
+    # --------------------------------------------------------
+
     row = {
         "source_modality": "photo",
         "category": fields["category"],
-        "issue": fields["issue"],
         "description": fields["description"],
         "gps_lat": gps_lat,
         "gps_lng": gps_lng,
         "image_url": image_url,
-        "issue_group_id" = issue_group_id,
         "status": "pending",
     }
-    result = supabase \
-        .table("complaints") \
-        .insert(row) \
+
+
+    result = (
+        supabase
+        .table("complaints")
+        .insert(row)
         .execute()
+    )
+
+
+    complaint = result.data[0]
+
+
+    # --------------------------------------------------------
+    # Deduplication
+    # --------------------------------------------------------
+
+    cluster_id, people_affected = (
+        await assign_duplicate_cluster(
+            complaint_id=complaint["id"],
+            category=complaint["category"],
+            description=complaint["description"],
+            gps_lat=complaint["gps_lat"],
+            gps_lng=complaint["gps_lng"],
+        )
+    )
+
+
+    complaint["cluster_id"] = cluster_id
+    complaint["people_affected"] = people_affected
+
+
     return {
-        "complaint": result.data[0]
+        "complaint": complaint
     }
